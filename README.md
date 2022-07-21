@@ -24,7 +24,7 @@ flutter pub get
 进行该插件的安装。
 
 ### 项目的配置
-由于该插件的实现依赖与 [flutter_reactive_ble](https://github.com/PhilipsHue/flutter_reactive_ble)，所以关于 Android 和 iOS 项目的配置需要参考 [flutter_reactive_ble](https://github.com/PhilipsHue/flutter_reactive_ble) 的文档进行。
+由于该插件的实现依赖于 [flutter_reactive_ble](https://github.com/PhilipsHue/flutter_reactive_ble)，所以关于 Android 和 iOS 项目的配置需要参考 [flutter_reactive_ble](https://github.com/PhilipsHue/flutter_reactive_ble) 的文档进行。
 
 ## 功能简介
 可以通过管理器创建一个外围设备的代理，之后不管是设备的连接还是通信，均通过该设备代理直接进行。能够让开发过程更加清晰，结构分明。

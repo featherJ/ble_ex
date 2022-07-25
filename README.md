@@ -16,6 +16,7 @@ dependencies:
   ble_ex:
     git:
       url: https://github.com/featherJ/ble_ex.git
+      ref: 0.9.0
 ```
 然后执行命令
 ```

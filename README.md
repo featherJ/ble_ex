@@ -10,13 +10,20 @@
 ## 安装
 
 ### 插件的安装
-你可以为 `pubspec.yaml` 的 `dependencies` 字段中增加如下依赖
+#### 从 pub.dev 安装
+你可以通过命令 `flutter pub add ble_ex` 直接安装 `ble_ex` 插件，这将自动为您项目内的 `pubspec.yaml` 文件的 `dependencies` 字段中增加如下依赖
+```yaml
+dependencies:
+  ble_ex: ^0.9.1
+```
+#### 从 github 安装
+需要您手动在 `pubspec.yaml` 文件的 `dependencies` 字段中增加如下依赖
 ```yaml
 dependencies:
   ble_ex:
     git:
       url: https://github.com/featherJ/ble_ex.git
-      ref: 0.9.0
+      ref: ^0.9.1
 ```
 然后执行命令
 ```

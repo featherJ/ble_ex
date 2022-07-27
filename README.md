@@ -1,5 +1,7 @@
 # Flutter ble_ex library
 
+[![ble_ex version](https://img.shields.io/pub/v/ble_ex?label=ble_ex)](https://pub.dev/packages/ble_ex)
+
 基于 [flutter_reactive_ble](https://github.com/PhilipsHue/flutter_reactive_ble) 实现的 BLE 中心设备的 Flutter 库，增加了更多中心设备与从设备的通信方式支持。
 
 外围设备目前提供了如下版本的实现：
@@ -11,13 +13,13 @@
 
 ### 插件的安装
 #### 从 pub.dev 安装
-你可以通过命令 `flutter pub add ble_ex` 直接安装 `ble_ex` 插件，这将自动为您项目内的 `pubspec.yaml` 文件的 `dependencies` 字段中增加如下依赖
+你可以通过命令 `flutter pub add ble_ex` 直接安装 `ble_ex` 插件，这将自动为你项目内的 `pubspec.yaml` 文件的 `dependencies` 字段中增加如下依赖
 ```yaml
 dependencies:
   ble_ex: ^0.9.1
 ```
 #### 从 github 安装
-需要您手动在 `pubspec.yaml` 文件的 `dependencies` 字段中增加如下依赖
+需要你手动在 `pubspec.yaml` 文件的 `dependencies` 字段中增加如下依赖
 ```yaml
 dependencies:
   ble_ex:

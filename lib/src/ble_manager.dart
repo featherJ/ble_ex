@@ -215,7 +215,7 @@ class BleManager extends Object {
   }
 
   /// 清空扫描添加设备的监听
-  void clearScanAddDevice(void Function(DiscoveredDevice device) listener) {
+  void clearScanAddDevice() {
     _scanAddDeviceFuncs.clear();
   }
 
@@ -231,7 +231,7 @@ class BleManager extends Object {
   }
 
   /// 清空扫描更新设备的监听
-  void clearScanUpdateDevice(void Function(DiscoveredDevice device) listener) {
+  void clearScanUpdateDevice() {
     _scanUpdateDeviceFuncs.clear();
   }
 
@@ -247,7 +247,7 @@ class BleManager extends Object {
   }
 
   /// 清空扫描删除设备的监听
-  void clearScanRemoveDevice(void Function(DiscoveredDevice device) listener) {
+  void clearScanRemoveDevice() {
     _scanRemoveDeviceFuncs.clear();
   }
 

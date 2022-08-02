@@ -68,7 +68,7 @@ class BleManager extends Object {
   Uint8List? _manufacturerFilter;
 
   void scanDevices({Uint8List? manufacturerFilter}) async {
-    _doScanDevices(true);
+    _doScanDevices(true, manufacturerFilter: manufacturerFilter);
   }
 
   void _doScanDevices(bool fire, {Uint8List? manufacturerFilter}) async {

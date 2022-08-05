@@ -160,6 +160,11 @@ class BlePeripheral extends Object {
     }
   }
 
+  /// 清空所有已连接监听
+  void clearConnectedListener() {
+    _connectedListeners.clear();
+  }
+
   /// 添加断开连接的监听
   void addDisconnectedListener(void Function(dynamic target) listener) {
     if (!_disconnectedListeners.contains(listener)) {
@@ -172,6 +177,11 @@ class BlePeripheral extends Object {
     if (_disconnectedListeners.contains(listener)) {
       _disconnectedListeners.remove(listener);
     }
+  }
+
+  /// 清空所有断开连接的监听
+  void clearDisconnectedListener() {
+    _disconnectedListeners.clear();
   }
 
   /// 添加连接错误的监听
@@ -188,6 +198,11 @@ class BlePeripheral extends Object {
     if (_connectErrorListeners.contains(listener)) {
       _connectErrorListeners.remove(listener);
     }
+  }
+
+  /// 清空所有连接错误的监听
+  void clearConnectErrorListener() {
+    _connectErrorListeners.clear();
   }
 
   /// 连接
@@ -439,6 +454,11 @@ class BlePeripheralService extends Object {
     _device.removeConnectedListener(listener);
   }
 
+  /// 清空所有已连接监听
+  void clearConnectedListener() {
+    _device.clearConnectedListener();
+  }
+
   /// 添加断开连接的监听
   void addDisconnectedListener(void Function(dynamic target) listener) {
     _device.addDisconnectedListener(listener);
@@ -447,6 +467,11 @@ class BlePeripheralService extends Object {
   /// 移除断开连接的监听
   void removeDisconnectedListener(void Function(dynamic target) listener) {
     _device.removeDisconnectedListener(listener);
+  }
+
+  /// 清空所有断开连接的监听
+  void clearDisconnectedListener() {
+    _device.clearDisconnectedListener();
   }
 
   /// 添加连接错误的监听
@@ -459,6 +484,11 @@ class BlePeripheralService extends Object {
   void removeConnectErrorListener(
       void Function(dynamic target, Object error) listener) {
     _device.removeConnectErrorListener(listener);
+  }
+
+  /// 清空所有连接错误的监听
+  void clearConnectErrorListener() {
+    _device.clearConnectErrorListener();
   }
 
   /// 确保已连接

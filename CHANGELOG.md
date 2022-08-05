@@ -1,3 +1,9 @@
+## 0.9.2
+
+* Add clear listener functions.
+* Fix manufactureFilter not working.
+* Remove the useless args.
+
 ## 0.9.1
 
 * Update the README.md file

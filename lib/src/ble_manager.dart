@@ -68,6 +68,7 @@ class BleManager extends Object {
   Uint8List? _manufacturerFilter;
 
   void scanDevices({Uint8List? manufacturerFilter}) async {
+    await stopScanDevices();
     _doScanDevices(true, manufacturerFilter: manufacturerFilter);
   }
 
@@ -163,7 +164,7 @@ class BleManager extends Object {
     _updateDeviceMap[device.id] = device;
   }
 
-  void stopScanDevices() {
+  Future<void> stopScanDevices() async {
     fireScanEvent = false;
     _targetServiceUuid = null;
     _targetManufacturerData = null;
@@ -177,14 +178,18 @@ class BleManager extends Object {
 
     if (_statusIniter != null) {
       _statusIniter!.cancel();
+      _statusIniter = null;
     }
     _statusIniter = null;
     if (_scanTimer != null) {
       _scanTimer!.cancel();
+      _scanTimer = null;
     }
     _scanTimer = null;
     if (_subscription != null) {
-      _subscription!.cancel();
+      await _subscription!.cancel();
+      _subscription = null;
+      await Future.delayed(const Duration(milliseconds: 200));
     }
   }
 
@@ -289,14 +294,14 @@ class BleManager extends Object {
 
   /// 得到目标蓝牙服务
   Future<DiscoveredDevice> scanForDevice(Uuid serviceUuid,
-      {Uint8List? manufacturerFilter}) {
-    stopScanDevices();
+      {Uint8List? manufacturerFilter}) async {
+    await stopScanDevices();
     fireScanEvent = false;
     Completer<DiscoveredDevice> _completer = Completer();
     _targetServiceUuid = serviceUuid;
     _targetManufacturerData = manufacturerFilter;
-    _findTargetDeviceFunc = (device) {
-      stopScanDevices();
+    _findTargetDeviceFunc = (device) async {
+      await stopScanDevices();
       _completer.complete(device);
     };
     _doScanDevices(false);

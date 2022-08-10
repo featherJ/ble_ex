@@ -1,3 +1,6 @@
+## 0.9.3
+* Add: Stop current scanning before 'scanDevices'.
+
 ## 0.9.2
 
 * Add clear listener functions.

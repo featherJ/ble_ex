@@ -66,8 +66,9 @@ class _WriteBytesHelper {
     List<List<int>> packages = [];
     int start = 0;
     int index = 0;
-    while (start < dataSize) {
+    while (start <= dataSize) {
       List<int> package = [];
+      int end = 0;
       //首包的处理
       if (start == 0) {
         //请求号
@@ -86,7 +87,7 @@ class _WriteBytesHelper {
         package.add(0);
         package.add(0);
         //包数据
-        var end = min(packageSize - 11, dataSize);
+        end = min(packageSize - 11, dataSize);
         List<int> data = datas.sublist(start, end);
         package.addAll(data);
         start = end;
@@ -103,14 +104,18 @@ class _WriteBytesHelper {
         package.add(indexInt.getInt8(2));
         package.add(indexInt.getInt8(3));
         //包数据
-        var end = min(start + packageSize - 5, dataSize);
+        end = min(start + packageSize - 5, dataSize);
         List<int> data = datas.sublist(start, end);
         package.addAll(data);
         start = end;
       }
       packages.add(package);
       index++;
+      if (start == end) {
+        break;
+      }
     }
+
     bleLog(_tag, "Split bytes to ${packages.length.toString()} packs.");
 
     //填补包个数

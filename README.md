@@ -1,6 +1,6 @@
 # Flutter ble_ex library
 
-[![ble_ex version](https://img.shields.io/pub/v/ble_ex?label=ble_ex)](https://pub.dev/packages/ble_ex)
+[![pub](https://img.shields.io/pub/v/ble_ex?label=pub&color=success)](https://pub.dev/packages/ble_ex)
 
 基于 [flutter_reactive_ble](https://github.com/PhilipsHue/flutter_reactive_ble) 实现的 BLE 中心设备的 Flutter 库，增加了更多中心设备与从设备的通信方式支持。
 

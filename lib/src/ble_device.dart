@@ -93,7 +93,7 @@ class BlePeripheral extends Object {
   ///恢复所有订阅
   Future<void> _recoverNotifies() async {
     bleLog(_tag, 'Recovering notify subscriptions');
-    Iterable<String> keys = notifyMap.keys;
+    List<String> keys = notifyMap.keys.toList();
     for (var key in keys) {
       var notifyData = notifyMap[key]!;
       if (notifyData.streamSubscription == null) {
@@ -114,7 +114,7 @@ class BlePeripheral extends Object {
   ///取消所有订阅
   Future<void> _cancelNotifies() async {
     bleLog(_tag, 'Canceling notifiy subscriptions');
-    Iterable<String> keys = notifyMap.keys;
+    List<String> keys = notifyMap.keys.toList();
     for (var key in keys) {
       var notifyData = notifyMap[key];
       bleLog(_tag,
@@ -132,7 +132,7 @@ class BlePeripheral extends Object {
   ///释放所有订阅
   Future<void> _disposeNotifies() async {
     await _cancelNotifies();
-    Iterable<String> keys = notifyMap.keys;
+    List<String> keys = notifyMap.keys.toList();
     for (var key in keys) {
       var notifyData = notifyMap[key];
       notifyData?.clear();

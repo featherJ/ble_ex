@@ -5,6 +5,7 @@ class BlePeripheral extends Object {
   static const String _tag = "BlePeripheral";
 
   late _MtuHelper _mtuHelper;
+  late _RequesHelper _requesHelper;
   late _WriteBytesHelper _writeBytesHelper;
   late _ReceiveBytesHelper _receiveBytesHelper;
   late _RequestBytesHelper _requestBytesHelper;
@@ -27,6 +28,7 @@ class BlePeripheral extends Object {
       _target = target;
     }
     _mtuHelper = _MtuHelper(this);
+    _requesHelper = _RequesHelper(this);
     _writeBytesHelper = _WriteBytesHelper(this);
     _receiveBytesHelper = _ReceiveBytesHelper(this);
     _requestBytesHelper = _RequestBytesHelper(this);
@@ -76,6 +78,26 @@ class BlePeripheral extends Object {
         listener(_target, error);
       }
     });
+  }
+
+  Future<void>? _safeFuture;
+
+  /// 确保发送安全的延时，用来实现类似队列的机制，保证每一次对外围设备的请求都至少延迟了20毫秒
+  Future<void> _ensureSafe(createWait) async {
+    if (_safeFuture != null) {
+      var current = _safeFuture!;
+      if (createWait) {
+        _safeFuture = current.then((value) async {
+          await Future.delayed(const Duration(milliseconds: 20));
+        });
+      }
+      return current;
+    } else {
+      if (createWait) {
+        _safeFuture = Future.delayed(const Duration(milliseconds: 20))
+            .then((value) async {});
+      }
+    }
   }
 
   ///当前是否是已连接状态
@@ -226,31 +248,52 @@ class BlePeripheral extends Object {
   /// 向一个 characteristic 写入数据数据
   Future<void> writeCharacteristicWithResponse(
       Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+    await _ensureSafe(false);
     await _device.writeCharacteristicWithResponse(
         serviceId, characteristicId, data);
+    _ensureSafe(true);
   }
 
   /// 向一个 characteristic 写入无应答数据数据
   Future<void> writeCharacteristicWithoutResponse(
       Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+    await _ensureSafe(false);
     await _device.writeCharacteristicWithoutResponse(
         serviceId, characteristicId, data);
+    _ensureSafe(true);
   }
 
   /// 从指定的 characteristic 读取数据
   Future<Uint8List> readCharacteristic(
       Uuid serviceId, Uuid characteristicId) async {
-    return await _device.readCharacteristic(serviceId, characteristicId);
+    await _ensureSafe(false);
+    Uint8List result =
+        await _device.readCharacteristic(serviceId, characteristicId);
+    _ensureSafe(true);
+    return result;
   }
 
   /// 请求修改mtu
   Future<int> requestMtu(int mtu, {int timeout = 2000}) async {
-    return await _device.requestMtu(mtu, timeout: timeout);
+    await _ensureSafe(false);
+    int result = await _device.requestMtu(mtu, timeout: timeout);
+    _ensureSafe(true);
+    return result;
+  }
+
+  /// 请求优先级，仅在android上生效
+  Future<void> requestConnectionPriority(ConnectionPriority priority) async {
+    await _ensureSafe(false);
+    await _device.requestConnectionPriority(priority);
+    _ensureSafe(true);
   }
 
   /// 请求建议的MTU大小
-  Future<int> requestSuggestedMtu() {
-    return _mtuHelper.requestSuggestedMtu();
+  Future<int> requestSuggestedMtu() async {
+    await _ensureSafe(false);
+    int result = await _mtuHelper.requestSuggestedMtu();
+    _ensureSafe(true);
+    return result;
   }
 
   Map<String, _NotifyData> notifyMap = {};
@@ -311,51 +354,55 @@ class BlePeripheral extends Object {
     }
   }
 
+  Future<void>? ensureConnectedFuture;
+
   /// 确保已连接
   Future<void> ensureConnected() async {
-    Completer<void> completer = Completer();
-    if (connected) {
-      completer.complete();
-    } else {
-      if (disconnected || disposed) {
-        completer.completeError("Peripheral has been disconnected of disposed");
-      } else {
-        void Function()? clear;
-        void connectedHandler(peripheral) {
-          if (clear != null) {
-            clear();
-          }
-          completer.complete();
-        }
-
-        void disconnectedHandler(peripheral) {
-          if (clear != null) {
-            clear();
-          }
-          completer.completeError("connect fail");
-        }
-
-        void connectedErrorHandler(peripheral, error) {
-          if (clear != null) {
-            clear();
-          }
-          completer.completeError("connect error");
-        }
-
-        clear = () {
-          removeConnectedListener(connectedHandler);
-          removeDisconnectedListener(disconnectedHandler);
-          removeConnectErrorListener(connectedErrorHandler);
-        };
-        addConnectedListener(connectedHandler);
-        addDisconnectedListener(disconnectedHandler);
-        addConnectErrorListener(connectedErrorHandler);
-        if (!connecting) {
-          connect();
-        }
-      }
+    if (disconnected || disposed) {
+      throw Exception("Peripheral has been disconnected of disposed");
     }
-    return completer.future;
+    if (connected) {
+      return;
+    }
+    if (ensureConnectedFuture != null) {
+      return ensureConnectedFuture;
+    }
+    Completer<void> completer = Completer();
+    void Function()? clear;
+    void connectedHandler(peripheral) {
+      if (clear != null) {
+        clear();
+      }
+      completer.complete();
+    }
+
+    void disconnectedHandler(peripheral) {
+      if (clear != null) {
+        clear();
+      }
+      completer.completeError("connect fail");
+    }
+
+    void connectedErrorHandler(peripheral, error) {
+      if (clear != null) {
+        clear();
+      }
+      completer.completeError("connect error");
+    }
+
+    clear = () {
+      removeConnectedListener(connectedHandler);
+      removeDisconnectedListener(disconnectedHandler);
+      removeConnectErrorListener(connectedErrorHandler);
+    };
+    addConnectedListener(connectedHandler);
+    addDisconnectedListener(disconnectedHandler);
+    addConnectErrorListener(connectedErrorHandler);
+    if (!connecting) {
+      connect();
+    }
+    ensureConnectedFuture = completer.future;
+    return ensureConnectedFuture!;
   }
 
   /// 写数据，可以忽视mtu限制
@@ -388,14 +435,14 @@ class BlePeripheral extends Object {
         serviceId, characteristicId, listener);
   }
 
-  /// 请求一个数据，收到mtu的限制
+  /// 请求一个数据，受到mtu的限制
   Future<Uint8List> request(
       Uuid serviceId, Uuid characteristicId, Uint8List data) async {
     if (disconnected || disposed) {
       throw Exception("Can not call this after disposed or disconnected");
     }
     await ensureConnected();
-    return _RequesHelper(serviceId, characteristicId, this).request(data);
+    return _requesHelper.request(serviceId, characteristicId, data);
   }
 
   /// 请求一个数据，不受到mtu的限制

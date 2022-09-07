@@ -12,6 +12,7 @@ class _WriteBytesHelper {
       Uuid serviceId, Uuid characteristicId, Uint8List bytes) async {
     bleLog(_tag,
         "Writing bytes(length:${bytes.length}) to {service:${serviceId.toString()}, characteristic:${characteristicId.toString()}}.");
+    await _blePeripheral._ensureSafe(false);
     Completer completer = Completer();
     bool completed = false;
     var requestIndex = _getIndex("write");
@@ -111,7 +112,7 @@ class _WriteBytesHelper {
       }
       packages.add(package);
       index++;
-      if (start == end) {
+      if (start == dataSize) {
         break;
       }
     }
@@ -144,7 +145,6 @@ class _WriteBytesHelper {
         clear();
         break;
       }
-      await Future.delayed(const Duration(milliseconds: 20));
     }
     if (!completed) {
       timer = Timer.periodic(const Duration(milliseconds: 2000), (timer) async {

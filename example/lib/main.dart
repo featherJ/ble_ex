@@ -3,9 +3,8 @@ import 'package:ble_ex_example/samples/cases/base_case.dart';
 import 'package:ble_ex_example/samples/cases/ble_communication_case.dart';
 import 'package:ble_ex_example/samples/cases/bleex_communication_case.dart';
 import 'package:ble_ex_example/samples/cases/bleex_reqeust_case.dart';
-import 'package:ble_ex_example/samples/cases/connect_by_dist_case.dart';
+import 'package:ble_ex_example/samples/cases/bleex_reqeust_high_frequency_case.dart';
 import 'package:ble_ex_example/samples/cases/reconnect_case.dart';
-import 'package:ble_ex_example/samples/cases/scan_case.dart';
 import 'package:ble_ex_example/samples/cases/verify_central_case.dart';
 import 'package:flutter/material.dart';
 
@@ -24,9 +23,10 @@ void runSampleCase(BleManager bleManager) {
   // CaseBase sampleCase = ReconnectCase();
   // CaseBase sampleCase = BleCommunicationCase();
   // CaseBase sampleCase = BleexRequestCase();
-  // CaseBase sampleCase = BleexCommunicationCase();
+  // CaseBase sampleCase = BleexRequestHighFrequencyCase();
+  CaseBase sampleCase = BleexCommunicationCase();
   // CaseBase sampleCase = ConnectByDistCase();
-  CaseBase sampleCase = ScanCase();
+  // CaseBase sampleCase = ScanCase();
 
   sampleCase.init(bleManager);
   bleLog(tag, "Sample case created");

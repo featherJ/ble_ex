@@ -21,13 +21,14 @@ class _RequestBytesSingle {
   Timer? timeoutTimer;
   void Function(Uint8List)? _onComplete;
   void Function(int)? _onError;
+  late Uint8List finalData;
   request(Uint8List request, void Function(Uint8List) onComplete,
       void Function(int) onError) async {
     _onComplete = onComplete;
     _onError = onError;
+    await _blePeripheral!._ensureSafe(false);
     List<int> finalList = [88, 99, _requestIndex, ...request.toList()];
-    Uint8List finalData = Uint8List.fromList(finalList);
-
+    finalData = Uint8List.fromList(finalList);
     try {
       await _blePeripheral!
           .writeBytes(_serviceId!, _characteristicId!, finalData);
@@ -90,13 +91,13 @@ class _RequestBytesSingle {
 }
 
 /// 有应答的请求
-class _RequestBytesHelper {
+class _RequestBytesMulit {
   static const int retryTimes = 2;
 
-  final BlePeripheral _blePeripheral;
-  _RequestBytesHelper(this._blePeripheral) {
-    _blePeripheral.addDisconnectedListener(_disconnectHandler);
-    _blePeripheral.addConnectErrorListener(_connectErrorHandler);
+  BlePeripheral? _blePeripheral;
+  _RequestBytesMulit(this._blePeripheral) {
+    _blePeripheral!.addDisconnectedListener(_disconnectHandler);
+    _blePeripheral!.addConnectErrorListener(_connectErrorHandler);
   }
 
   Future<Uint8List> request(
@@ -139,7 +140,22 @@ class _RequestBytesHelper {
   }
 
   Future<void> clear() async {
+    _blePeripheral?.addDisconnectedListener(_disconnectHandler);
+    _blePeripheral?.addConnectErrorListener(_connectErrorHandler);
+    _blePeripheral = null;
     await _singleReqeust?.clear();
     _singleReqeust?.clearFuncs();
+  }
+}
+
+/// 有应答的请求
+class _RequestBytesHelper {
+  final BlePeripheral _blePeripheral;
+  _RequestBytesHelper(this._blePeripheral);
+
+  Future<Uint8List> request(
+      Uuid serviceId, Uuid characteristicId, Uint8List request) {
+    _RequestBytesMulit requester = _RequestBytesMulit(_blePeripheral);
+    return requester.request(serviceId, characteristicId, request);
   }
 }

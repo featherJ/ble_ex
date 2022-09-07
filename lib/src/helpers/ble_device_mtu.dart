@@ -19,8 +19,14 @@ class _MtuHelper {
 
   _MtuHelper(this._blePeripheral);
 
+  Future<int>? finalFuture;
+
   /// 初始化请求建议的MTU大小
   Future<int> requestSuggestedMtu() async {
+    //确保不会被重复请求
+    if (finalFuture != null) {
+      return finalFuture!;
+    }
     _blePeripheral.fireConnectEvent = false;
     Completer<int> completer = Completer();
     _doRequestSuggestedMtu((mtu) {
@@ -34,7 +40,8 @@ class _MtuHelper {
       _blePeripheral.fireConnectEvent = true;
       completer.complete(mtu);
     });
-    return completer.future;
+    finalFuture = completer.future;
+    return finalFuture!;
   }
 
   int? cacheMaxMtu;

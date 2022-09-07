@@ -297,7 +297,18 @@ class BleDeviceCore {
         .map((value) => Uint8List.fromList(value));
   }
 
-  // /// 请求修改mtu
+  /// 请求优先级，仅在android上生效
+  Future<void> requestConnectionPriority(ConnectionPriority priority) async {
+    if (disposed || disconnected) {
+      throw Exception("Can not call this after disposed or disconnected");
+    }
+    if (Platform.isAndroid) {
+      return _flutterReactiveBle!
+          .requestConnectionPriority(deviceId: deviceId, priority: priority);
+    }
+  }
+
+  /// 请求修改mtu
   Future<int> requestMtu(int mtu, {int timeout = 2000}) async {
     if (disposed || disconnected) {
       throw Exception("Can not call this after disposed or disconnected");

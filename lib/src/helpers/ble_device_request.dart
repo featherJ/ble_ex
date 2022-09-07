@@ -1,12 +1,12 @@
 part of ble_ex;
 
 /// 单次有应答的请求
-class _RequesHelperSingle {
+class _RequesSingle {
   final Uuid _requestCharacteristic;
   final Uuid _requestServiceId;
   BlePeripheral? _blePeripheral;
   int _requestIndex = 0;
-  _RequesHelperSingle(this._requestServiceId, this._requestCharacteristic,
+  _RequesSingle(this._requestServiceId, this._requestCharacteristic,
       this._blePeripheral) {
     _requestIndex = _getIndex('reqeust');
     _blePeripheral!.addDisconnectedListener(_disconnectHandler);
@@ -21,7 +21,7 @@ class _RequesHelperSingle {
       void Function(Object) onError) async {
     _onComplete = onComplete;
     _onError = onError;
-
+    await _blePeripheral!._ensureSafe(false);
     _blePeripheral!.addNotifyListener(
         _requestServiceId, _requestCharacteristic, _requestNotifyHandler);
     timer = Timer.periodic(const Duration(milliseconds: 5000), (timer) async {
@@ -96,14 +96,14 @@ class _RequesHelperSingle {
 }
 
 /// 有应答的请求
-class _RequesHelper {
+class _RequesMulit {
   //重试次数
   static const int _retryTimes = 2;
   final Uuid _requestCharacteristic;
   final Uuid _requestServiceId;
   BlePeripheral? _blePeripheral;
 
-  _RequesHelper(this._requestServiceId, this._requestCharacteristic,
+  _RequesMulit(this._requestServiceId, this._requestCharacteristic,
       this._blePeripheral) {
     _blePeripheral!.addDisconnectedListener(_disconnectHandler);
     _blePeripheral!.addConnectErrorListener(_connectErrorHandler);
@@ -115,9 +115,9 @@ class _RequesHelper {
     return _complete.future;
   }
 
-  _RequesHelperSingle? _singleReqeust;
+  _RequesSingle? _singleReqeust;
   _doRequest(Uint8List data, retryTimes) {
-    _singleReqeust = _RequesHelperSingle(
+    _singleReqeust = _RequesSingle(
         _requestServiceId, _requestCharacteristic, _blePeripheral!);
     _singleReqeust!.request(data, (result) {
       clear();
@@ -153,5 +153,18 @@ class _RequesHelper {
     _blePeripheral?.removeDisconnectedListener(_disconnectHandler);
     _blePeripheral?.removeConnectErrorListener(_connectErrorHandler);
     _blePeripheral = null;
+  }
+}
+
+/// 有应答的请求
+class _RequesHelper {
+  final BlePeripheral _blePeripheral;
+  _RequesHelper(this._blePeripheral);
+
+  Future<Uint8List> request(
+      Uuid serviceId, Uuid characteristicId, Uint8List request) {
+    _RequesMulit requester =
+        _RequesMulit(serviceId, characteristicId, _blePeripheral);
+    return requester.request(request);
   }
 }

@@ -1,3 +1,8 @@
+## 0.9.4
+* Add: Ensure that the interval between sending data is at least 30ms.
+* Add: Add 'requestConnectionPriority' function to BlePeripheral.
+
+
 ## 0.9.3
 * Add: Stop current scanning before 'scanDevices'.
 

@@ -147,9 +147,9 @@ class _WriteBytesHelper {
       }
     }
     if (!completed) {
-      timer = Timer.periodic(const Duration(milliseconds: 2000), (timer) async {
+      timer = Timer.periodic(const Duration(milliseconds: 5000), (timer) async {
         timer.cancel();
-        bleLog(_tag, "Write packs timeout.");
+        bleLog(_tag, "Write packs timeout with $packages.");
         if (!completed) {
           completer.completeError('write bytes timeout');
         }

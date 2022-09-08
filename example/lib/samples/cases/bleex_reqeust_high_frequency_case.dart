@@ -37,11 +37,26 @@ class BleexRequestHighFrequencyCase extends CaseBase {
     request(3);
     request(4);
     request(5);
+    request(6);
+    request(7);
+    request(8);
+    request(9);
+    request(10);
+    request(11);
+    request(12);
+    request(13);
+    request(14);
+    request(15);
+    request(16);
+    request(17);
+    request(18);
+    request(19);
+    request(20);
   }
 
   request(int index) async {
     List<int> data = [];
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < 500; i++) {
       data.add(index);
     }
     bleLog(

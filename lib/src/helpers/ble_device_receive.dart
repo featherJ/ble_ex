@@ -184,7 +184,8 @@ class _ReceiveBytescharacteristic {
     }
   }
 
-  void _sendResult(int requestIndex, int result) {
+  void _sendResult(int requestIndex, int result) async {
+    await _blePeripheral._ensureSafe(false);
     try {
       bleLog(_tag,
           "Sending result {index:${requestIndex.toString()}, value:${result.toString()}} to peripheral.");

@@ -83,19 +83,18 @@ class BlePeripheral extends Object {
   Future<void>? _safeFuture;
 
   /// 确保发送安全的延时，用来实现类似队列的机制，保证每一次对外围设备的请求都至少延迟了20毫秒
-  Future<void> _ensureSafe(createWait) async {
+  Future<void> _ensureSafe(bool createWait) async {
     if (_safeFuture != null) {
       var current = _safeFuture!;
       if (createWait) {
-        _safeFuture = current.then((value) async {
-          await Future.delayed(const Duration(milliseconds: 20));
+        _safeFuture = current.then((value) {
+          return Future.delayed(const Duration(milliseconds: 30));
         });
       }
       return current;
     } else {
       if (createWait) {
-        _safeFuture = Future.delayed(const Duration(milliseconds: 20))
-            .then((value) async {});
+        _safeFuture = Future.delayed(const Duration(milliseconds: 30));
       }
     }
   }
@@ -248,51 +247,45 @@ class BlePeripheral extends Object {
   /// 向一个 characteristic 写入数据数据
   Future<void> writeCharacteristicWithResponse(
       Uuid serviceId, Uuid characteristicId, Uint8List data) async {
-    await _ensureSafe(false);
+    await _ensureSafe(true);
     await _device.writeCharacteristicWithResponse(
         serviceId, characteristicId, data);
-    _ensureSafe(true);
   }
 
   /// 向一个 characteristic 写入无应答数据数据
   Future<void> writeCharacteristicWithoutResponse(
       Uuid serviceId, Uuid characteristicId, Uint8List data) async {
-    await _ensureSafe(false);
+    await _ensureSafe(true);
     await _device.writeCharacteristicWithoutResponse(
         serviceId, characteristicId, data);
-    _ensureSafe(true);
   }
 
   /// 从指定的 characteristic 读取数据
   Future<Uint8List> readCharacteristic(
       Uuid serviceId, Uuid characteristicId) async {
-    await _ensureSafe(false);
+    await _ensureSafe(true);
     Uint8List result =
         await _device.readCharacteristic(serviceId, characteristicId);
-    _ensureSafe(true);
     return result;
   }
 
   /// 请求修改mtu
   Future<int> requestMtu(int mtu, {int timeout = 2000}) async {
-    await _ensureSafe(false);
+    await _ensureSafe(true);
     int result = await _device.requestMtu(mtu, timeout: timeout);
-    _ensureSafe(true);
     return result;
   }
 
   /// 请求优先级，仅在android上生效
   Future<void> requestConnectionPriority(ConnectionPriority priority) async {
-    await _ensureSafe(false);
+    await _ensureSafe(true);
     await _device.requestConnectionPriority(priority);
-    _ensureSafe(true);
   }
 
   /// 请求建议的MTU大小
   Future<int> requestSuggestedMtu() async {
-    await _ensureSafe(false);
+    await _ensureSafe(true);
     int result = await _mtuHelper.requestSuggestedMtu();
-    _ensureSafe(true);
     return result;
   }
 

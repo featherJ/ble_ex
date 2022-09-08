@@ -23,8 +23,8 @@ void runSampleCase(BleManager bleManager) {
   // CaseBase sampleCase = ReconnectCase();
   // CaseBase sampleCase = BleCommunicationCase();
   // CaseBase sampleCase = BleexRequestCase();
-  // CaseBase sampleCase = BleexRequestHighFrequencyCase();
-  CaseBase sampleCase = BleexCommunicationCase();
+  CaseBase sampleCase = BleexRequestHighFrequencyCase();
+  // CaseBase sampleCase = BleexCommunicationCase();
   // CaseBase sampleCase = ConnectByDistCase();
   // CaseBase sampleCase = ScanCase();
 

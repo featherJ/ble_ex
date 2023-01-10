@@ -5,6 +5,9 @@ class BleUUIDs {
   static final Uuid service =
       Uuid.parse("10000000-0000-0000-0000-000000000000");
 
+  static final Uuid service2 =
+      Uuid.parse("10000000-0002-0000-0000-000000000000");
+
   /// A uuid of characteristic used to authenticate the central device
   static final Uuid verifyCentral =
       Uuid.parse("10000001-0000-0000-0000-000000000000");
@@ -12,6 +15,8 @@ class BleUUIDs {
   /// A uuid of characteristic used to test notifying from peripheral device
   static final Uuid baseNotifyTest =
       Uuid.parse("10000002-0000-0000-0000-000000000000");
+  static final Uuid baseNotifyResultTest =
+      Uuid.parse("10000002-0001-0000-0000-000000000000");
 
   // /A uuid of characteristic used to test reading from peripheral
   static final Uuid baseReadTest =

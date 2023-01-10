@@ -5,7 +5,7 @@ class _BytesRecevier {
   static const String _tag = "_BytesRecevier";
 
   //超时时间2秒
-  static const int timeOut = 2000;
+  static const int timeOut = 20000;
 
   final int _requestIndex;
   _BytesRecevier(this._requestIndex) {
@@ -70,6 +70,7 @@ class _BytesRecevier {
       curIndexData.setUint8(2, pack[3]);
       curIndexData.setUint8(3, pack[4]);
       int curIndex = curIndexData.getInt32(0);
+      print("curIndex:$curIndex");
       if (curIndex == _index) {
         List<int> curPack = pack.sublist(5, pack.length);
         _packages.add(curPack);
@@ -85,6 +86,7 @@ class _BytesRecevier {
       }
     }
     _index++;
+    print('index/packageNum:$_index/$_packageNum');
     if (_packageNum == _index) {
       List<int> finalBytes = [];
       for (int i = 0; i < _packages.length; i++) {
@@ -130,10 +132,12 @@ class _BytesRecevier {
   }
 
   void _updateTimer() {
+    print("_updateTimer");
     _updateTimestamp = DateTime.now().millisecondsSinceEpoch;
   }
 
   void _cancelTimer() {
+    print("_cancelTimer");
     _timer?.cancel();
     _timer = null;
   }

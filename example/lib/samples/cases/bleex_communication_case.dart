@@ -4,7 +4,6 @@ import 'package:ble_ex/ble_ex.dart';
 import 'package:ble_ex_example/samples/ble_uuids.dart';
 import 'package:ble_ex_example/samples/cases/base_case.dart';
 import 'package:ble_ex_example/samples/constants.dart';
-import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 class BleexCommunicationCase extends CaseBase {
   static const String tag = "BleexCommunicationCase";
@@ -46,32 +45,40 @@ class BleexCommunicationCase extends CaseBase {
     int suggestedMtu = await peripheral.requestSuggestedMtu();
     bleLog(tag, "Suggested mtu value is $suggestedMtu");
 
-    bleLog(tag, " ---------------------------------- ");
-    List<int> data = [];
-    for (var i = 0; i < 5000; i++) {
-      data.add(1);
-    }
-    bleLog(tag, "Writing large bytes(length: ${data.length}) to peripheral");
-    try {
-      await peripheral.writeBytes(
-          BleUUIDs.writeLargeDataToPeripheralTest, Uint8List.fromList(data));
-      bleLog(tag, "Write large bytes to peripheral succeeded");
-    } catch (e) {
-      bleLog(tag, "Write large bytes to peripheral error: ${e.toString()}");
-    }
+    // bleLog(tag, " ---------------------------------- ");
+    // List<int> data = [];
+    // for (var i = 0; i < 5000; i++) {
+    //   data.add(1);
+    // }
+    // bleLog(tag, "Writing large bytes(length: ${data.length}) to peripheral");
+    // try {
+    //   await peripheral.writeBytes(
+    //       BleUUIDs.writeLargeDataToPeripheralTest, Uint8List.fromList(data));
+    //   bleLog(tag, "Write large bytes to peripheral succeeded");
+    // } catch (e) {
+    //   bleLog(tag, "Write large bytes to peripheral error: ${e.toString()}");
+    // }
 
     bleLog(tag, " ---------------------------------- ");
-    data = [];
-    for (var i = 0; i < 5000; i++) {
-      data.add(2);
+    request(2);
+    // request(3);
+  }
+
+  void request(int value) async {
+    List<int> data = [];
+    for (var i = 0; i < 10; i++) {
+      data.add(value);
     }
     bleLog(
         tag, "Requesting large bytes(length: ${data.length}) from peripheral");
     try {
+      // var time = DateTime.now().millisecondsSinceEpoch;
       var reaultData = await peripheral.requestBytes(
           BleUUIDs.requestLargeDataTest, Uint8List.fromList(data));
+      // var time2 = DateTime.now().millisecondsSinceEpoch;
+      // print('fuck ${time2 - time}');
       bleLog(tag,
-          "Request large bytes(length: ${reaultData.length}) from peripheral succeeded: ${reaultData.toList()}");
+          "Request large bytes(length: ${reaultData.length}) from peripheral succeeded");
     } catch (e) {
       bleLog(tag, "Request large bytes from peripheral error: ${e.toString()}");
     }

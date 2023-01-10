@@ -11,7 +11,7 @@ class ConnectByDistCase extends CaseBase {
   static const String tag = "ConnectByDistCase";
 
   @override
-  Future<void> start() async {
+  Future<void> start({required Uuid service}) async {
     bleManager.listenScanAddDevice(deviceScanHandler);
     bleManager.listenScanUpdateDevice(deviceScanHandler);
     bleManager.scanDevices(

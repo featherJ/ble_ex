@@ -4,7 +4,7 @@ part of ble_ex;
 class _RequestBytesSingle {
   static int errorTypeTimeout = 1;
   static int errorTypeError = 2;
-  static int timeout = 5000;
+  static int timeout = 50000;
 
   BlePeripheral? _blePeripheral;
   Uuid? _serviceId;

@@ -6,7 +6,7 @@ class ScanCase extends CaseBase {
   static const String tag = "ScanCase";
 
   @override
-  Future<void> start() async {
+  Future<void> start({required Uuid service}) async {
     bleManager.listenScanAddDevice(deviceScanHandler);
     bleManager.listenScanUpdateDevice(deviceScanHandler);
     bleManager.scanDevices();

@@ -1,7 +1,5 @@
 import 'package:ble_ex/ble_ex.dart';
-import 'package:ble_ex_example/samples/ble_uuids.dart';
 import 'package:ble_ex_example/samples/constants.dart';
-import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 class CaseBase {
   static const String tag = "CaseBase";
@@ -12,11 +10,11 @@ class CaseBase {
   }
 
   late BlePeripheralService peripheral;
-  Future<void> start() async {
-    var device = await bleManager.scanForDevice(BleUUIDs.service,
+  Future<void> start({required Uuid service}) async {
+    var device = await bleManager.scanForDevice(service,
         manufacturerFilter: Constants.serviceManufacturerTag);
     bleLog(tag, 'Find device: ' + device.toString());
-    peripheral = createPeripheral(device, BleUUIDs.service);
+    peripheral = createPeripheral(device, service);
     peripheral.connect();
   }
 

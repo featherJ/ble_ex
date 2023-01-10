@@ -582,6 +582,11 @@ class BlePeripheralService extends Object {
     return _device.requestSuggestedMtu();
   }
 
+  /// 请求优先级，仅在android上生效
+  Future<void> requestConnectionPriority(ConnectionPriority priority) async {
+    await _device.requestConnectionPriority(priority);
+  }
+
   /// 请求一个数据，收到mtu的限制
   Future<Uint8List> request(Uuid characteristicId, Uint8List data) async {
     if (disconnected || disposed) {

@@ -1,13 +1,14 @@
 part of ble_ex;
 
-class _SingleRequester {
-  final Uuid _requestCharacteristic;
-  final Uuid _requestServiceId;
+/// 单次有应答的请求
+class _SingleLargeRequester {
   BlePeripheral? _blePeripheral;
+  final Uuid? _serviceId;
+  final Uuid? _characteristicId;
   int _requestIndex = 0;
-  _SingleRequester(this._requestServiceId, this._requestCharacteristic,
-      this._blePeripheral) {
-    _requestIndex = _getIndex('reqeust');
+  _SingleLargeRequester(
+      this._serviceId, this._characteristicId, this._blePeripheral) {
+    _requestIndex = _getIndex("largetRequest");
     _blePeripheral!.addDisconnectedListener(_disconnectHandler);
     _blePeripheral!.addConnectErrorListener(_connectErrorHandler);
   }
@@ -15,39 +16,50 @@ class _SingleRequester {
   bool callbacked = false;
   void Function(Uint8List)? _onComplete;
   void Function(Object)? _onError;
-  request(Uint8List data, void Function(Uint8List) onComplete,
+  late Uint8List finalData;
+  request(Uint8List request, void Function(Uint8List) onComplete,
       void Function(Object) onError) async {
     _onComplete = onComplete;
     _onError = onError;
-    _blePeripheral!.addNotifyListener(
-        _requestServiceId, _requestCharacteristic, _notifyHandler);
-    List<int> finalList = [_requestIndex, ...data.toList()];
-    Uint8List finalData = Uint8List.fromList(finalList);
+    _blePeripheral!.addLargeIndicateListener(
+        _serviceId!, _characteristicId!, _largetIndicateHandler);
+    List<int> finalList = [
+      _DataTags.msRequestLarge[0],
+      _DataTags.msRequestLarge[1],
+      _requestIndex,
+      ...request.toList()
+    ];
+    finalData = Uint8List.fromList(finalList);
     try {
-      await _blePeripheral!.writeWithResponse(
-          _requestServiceId, _requestCharacteristic, finalData);
+      await _blePeripheral!
+          .writeLarge(_serviceId!, _characteristicId!, finalData);
     } catch (e) {
       clear();
-      if (!callbacked) {
+      if (!callbacked && _onError != null) {
         callbacked = true;
         _onError!(e);
       }
     }
   }
 
-  Future<void> _notifyHandler(dynamic target, Uint8List data) async {
+  Future<void> _largetIndicateHandler(dynamic target, Uint8List data) async {
     List<int> response = data.toList();
-    if (response.isEmpty) {
+    if (response.length < 3) {
       return;
     }
-    int curRequestIndex = response[0];
+    //验证头
+    if (response[0] != _DataTags.smResponseLarge[0] ||
+        response[1] != _DataTags.smResponseLarge[1]) {
+      return;
+    }
+    //验证请求号
+    int curRequestIndex = response[2];
     if (curRequestIndex != _requestIndex) {
       return;
     }
     await clear();
-    response.removeAt(0);
-    Uint8List responseData = Uint8List.fromList(response);
-    if (!callbacked) {
+    Uint8List responseData = Uint8List.fromList(response.sublist(3));
+    if (!callbacked && _onComplete != null) {
       callbacked = true;
       _onComplete!(responseData);
     }
@@ -70,23 +82,24 @@ class _SingleRequester {
   }
 
   Future<void> clear() async {
-    await _blePeripheral?.removeNotifyListener(
-        _requestServiceId, _requestCharacteristic, _notifyHandler);
+    await _blePeripheral?.removeLargeIndicateListener(
+        _serviceId!, _characteristicId!, _largetIndicateHandler);
     _blePeripheral?.removeDisconnectedListener(_disconnectHandler);
     _blePeripheral?.removeConnectErrorListener(_connectErrorHandler);
     _blePeripheral = null;
   }
 }
 
-class _Requester {
+/// 长数据请求
+class _LargeRequester {
   final BlePeripheral _blePeripheral;
-  _Requester(this._blePeripheral);
+  _LargeRequester(this._blePeripheral);
   Future<Uint8List> request(
       Uuid serviceId, Uuid characteristicId, Uint8List request) {
     Completer<Uint8List> completer = Completer();
 
-    _SingleRequester requester =
-        _SingleRequester(serviceId, characteristicId, _blePeripheral);
+    _SingleLargeRequester requester =
+        _SingleLargeRequester(serviceId, characteristicId, _blePeripheral);
     requester.request(request, (result) {
       completer.complete(result);
     }, (error) {

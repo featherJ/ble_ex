@@ -28,8 +28,8 @@ class _LargerWriter {
         //请求号
         package.add(requestIndex);
         //起始包标识
-        package.add(_DataTags.ms_write_large[0]);
-        package.add(_DataTags.ms_write_large[1]);
+        package.add(_DataTags.msWriteLarge[0]);
+        package.add(_DataTags.msWriteLarge[1]);
         //数据长度
         package.add(dataSizeInt.getInt8(0));
         package.add(dataSizeInt.getInt8(1));

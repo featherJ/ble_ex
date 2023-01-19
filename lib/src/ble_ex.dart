@@ -21,6 +21,7 @@ part 'helpers/notify_data.dart';
 part 'helpers/requester.dart';
 part 'helpers/suggest_mtu_requester.dart';
 part 'helpers/large_indicate_recever.dart';
+part 'helpers/large_requester.dart';
 
 typedef ScanningListener = void Function(DiscoveredDevice device);
 

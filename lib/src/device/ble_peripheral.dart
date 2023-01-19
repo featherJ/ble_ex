@@ -13,6 +13,7 @@ class BlePeripheral extends Object {
   late _LargerWriter _largeWriter;
   late _Requester _requester;
   late _LargeIndicateReceiver _largeIndicateReceiver;
+  late _LargeRequester _largeRequester;
 
   /// 得到建议的mtu，-1表示为初始化
   int get suggestedMTU => _suggestMtuRequester.suggestedMtu;
@@ -31,7 +32,7 @@ class BlePeripheral extends Object {
     _largeWriter = _LargerWriter(this);
     _requester = _Requester(this);
     _largeIndicateReceiver = _LargeIndicateReceiver(this);
-    // _requestBytesHelper = _RequestBytesHelper(this);
+    _largeRequester = _LargeRequester(this);
     _device = _BlePeripheralCore._(deviceId, flutterReactiveBle);
     _device.state.listen((event) {
       if (event.connectionState == DeviceConnectionState.connected) {
@@ -400,9 +401,6 @@ class BlePeripheral extends Object {
   /// 添加一个长数据的监听
   void addLargeIndicateListener(
       Uuid serviceId, Uuid characteristicId, NotifyListener listener) {
-    if (disconnected || disposed) {
-      throw Exception("Can not call this after disposed or disconnected");
-    }
     _largeIndicateReceiver.addLargeIndicateListener(
         serviceId, characteristicId, listener, _self);
   }
@@ -410,11 +408,15 @@ class BlePeripheral extends Object {
   /// 移除一个长数据的监听
   Future<void> removeLargeIndicateListener(
       Uuid serviceId, Uuid characteristicId, NotifyListener listener) async {
-    if (disconnected || disposed) {
-      throw Exception("Can not call this after disposed or disconnected");
-    }
     await _largeIndicateReceiver.removeLargeIndicateListener(
         serviceId, characteristicId, listener);
+  }
+
+  /// 请求一个数据，不受到mtu的限制
+  Future<Uint8List> requestLarge(
+      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+    checkConnected();
+    return _largeRequester.request(serviceId, characteristicId, data);
   }
 
   /// 释放

@@ -38,8 +38,8 @@ class _BytesRecevier {
     List<int> pack = packData.toList();
     if (_index == 0) {
       //是一个首包
-      if (pack[1] == _DataTags.sm_indicate_large[0] &&
-          pack[2] == _DataTags.sm_indicate_large[1]) {
+      if (pack[1] == _DataTags.smIndicateLarge[0] &&
+          pack[2] == _DataTags.smIndicateLarge[1]) {
         bleLog(_tag, "Received first pack");
         ByteData packageSizeData = ByteData(4);
         packageSizeData.setUint8(0, pack[3]);
@@ -198,8 +198,8 @@ class _ReceiveBytescharacteristic {
     } else {
       //没有这个接收器，证明原则上应该是首包才对，如果不是首包还没找到接收器，则直接忽视这个包，应该是之前包的遗漏部分。
       if (pack.length >= 3 &&
-          pack[1] == _DataTags.sm_indicate_large[0] &&
-          pack[2] == _DataTags.sm_indicate_large[1]) {
+          pack[1] == _DataTags.smIndicateLarge[0] &&
+          pack[2] == _DataTags.smIndicateLarge[1]) {
         _BytesRecevier newReceiver = _BytesRecevier(requestIndex);
         newReceiver.setCallback((requestIndex, data) {
           bleLog(_tag,

@@ -1,21 +1,16 @@
 library ble_ex;
 
+import 'package:ble_ex/ble_ex.dart';
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:ble_ex/ble_ex.dart';
-import 'package:ble_ex/src/utils/ble_log_level.dart';
-import 'package:ble_ex/src/utils/ble_logger.dart';
-
 part 'consts/data_tags.dart';
-
 part 'core/byte_index.dart';
-
 part 'device/ble_peripheral_core.dart';
 part 'device/ble_peripheral.dart';
-
 part 'helpers/large_writer.dart';
 part 'helpers/notify_data.dart';
 part 'helpers/requester.dart';
@@ -292,5 +287,12 @@ class BleEx extends Object {
     };
     _doScanDevices(false, null);
     return _completer.future;
+  }
+
+  /// 创建一个外围设备
+  T createPeripheral<T extends BlePeripheral>(
+      DiscoveredDevice device, T instance) {
+    instance._initPeripheral(device.id, _flutterReactiveBle);
+    return instance;
   }
 }

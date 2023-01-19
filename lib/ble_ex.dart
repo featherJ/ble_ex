@@ -6,6 +6,6 @@
 library ble_ex;
 
 export 'src/ble_ex.dart';
-// export 'src/ble_logger.dart';
-// export 'src/ble_log_level.dart';
+export 'src/utils/ble_logger.dart';
+export 'src/utils/ble_log_level.dart';
 export 'package:flutter_reactive_ble/flutter_reactive_ble.dart';

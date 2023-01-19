@@ -25,9 +25,8 @@ class BlePeripheral extends Object {
 
   bool fireConnectEvent = true;
   late BlePeripheral _self;
-  BlePeripheral._(String deviceId, FlutterReactiveBle flutterReactiveBle) {
+  void _initPeripheral(String deviceId, FlutterReactiveBle flutterReactiveBle) {
     _self = this;
-
     _suggestMtuRequester = _SuggestMtuRequester(this);
     _largeWriter = _LargerWriter(this);
     _requester = _Requester(this);

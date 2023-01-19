@@ -5,6 +5,7 @@ import 'package:ble_ex/src/utils/ble_log_level.dart';
 void bleLog(String tag, String msg) {
   if (BleEx.logLevel & BleLogLevel.none == 0 &&
       BleEx.logLevel & BleLogLevel.lib != 0) {
+    // ignore: avoid_print
     print("[BleLog: $tag] $msg");
   }
 }

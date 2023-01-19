@@ -1,8 +1,18 @@
+library ble_ex;
+
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:ble_ex/ble_ex.dart';
 import 'package:ble_ex/src/utils/ble_log_level.dart';
 import 'package:ble_ex/src/utils/ble_logger.dart';
+
+part 'device/ble_peripheral_core.dart';
+part 'device/ble_peripheral.dart';
+
+part 'helpers/mtu_helper.dart';
+part 'helpers/notify_data.dart';
 
 class _BleStatusIniter {
   final FlutterReactiveBle _flutterReactiveBle;

@@ -124,7 +124,7 @@ class BleEx extends Object {
         if (!_deviceMap.containsKey(deviceId)) {
           _updateDeviceMap.remove(deviceId);
           if (fireScanEvent) {
-            List<void Function(DiscoveredDevice)> curScanRemoveDeviceFuncs = [];
+            List<ScanningListener> curScanRemoveDeviceFuncs = [];
             for (var listener in _scanRemoveDeviceFuncs) {
               curScanRemoveDeviceFuncs.add(listener);
             }
@@ -157,7 +157,7 @@ class BleEx extends Object {
   void _doUpdateDevice(DiscoveredDevice device) {
     if (fireScanEvent) {
       if (_updateDeviceMap.containsKey(device.id)) {
-        List<void Function(DiscoveredDevice)> curScanUpdateDeviceFuncs = [];
+        List<ScanningListener> curScanUpdateDeviceFuncs = [];
         for (var listener in _scanUpdateDeviceFuncs) {
           curScanUpdateDeviceFuncs.add(listener);
         }
@@ -165,7 +165,7 @@ class BleEx extends Object {
           listener(device);
         }
       } else {
-        List<void Function(DiscoveredDevice)> curScanAddDeviceFuncs = [];
+        List<ScanningListener> curScanAddDeviceFuncs = [];
         for (var listener in _scanAddDeviceFuncs) {
           curScanAddDeviceFuncs.add(listener);
         }

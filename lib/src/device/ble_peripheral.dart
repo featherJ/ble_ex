@@ -46,7 +46,7 @@ class BlePeripheral extends Object {
           listener();
         }
         if (fireConnectEvent) {
-          List<void Function(BlePeripheral)> curConnectedListeners = [];
+          List<ConnectionListener> curConnectedListeners = [];
           for (var listener in _connectedListeners) {
             curConnectedListeners.add(listener);
           }
@@ -59,7 +59,7 @@ class BlePeripheral extends Object {
         bleLog(_tag, "Inner disconnected");
         _cancelNotifies();
         if (fireConnectEvent) {
-          List<void Function(BlePeripheral)> curDisconnectedListeners = [];
+          List<ConnectionListener> curDisconnectedListeners = [];
           for (var listener in _disconnectedListeners) {
             curDisconnectedListeners.add(listener);
           }
@@ -70,7 +70,7 @@ class BlePeripheral extends Object {
       }
     }, onError: (error) {
       bleLog(_tag, 'Inner error:${error.toString()}');
-      List<void Function(BlePeripheral, Object)> curConnectErrorListeners = [];
+      List<ConnectionErrorListener> curConnectErrorListeners = [];
       for (var listener in _connectErrorListeners) {
         curConnectErrorListeners.add(listener);
       }
@@ -146,9 +146,9 @@ class BlePeripheral extends Object {
 
   final List<void Function()> _innerConnectedFuncs = [];
 
-  final List<void Function(BlePeripheral)> _connectedListeners = [];
-  final List<void Function(BlePeripheral)> _disconnectedListeners = [];
-  final List<void Function(BlePeripheral, Object)> _connectErrorListeners = [];
+  final List<ConnectionListener> _connectedListeners = [];
+  final List<ConnectionListener> _disconnectedListeners = [];
+  final List<ConnectionErrorListener> _connectErrorListeners = [];
 
   /// 添加已连接的监听
   void addConnectedListener(ConnectionListener listener) {

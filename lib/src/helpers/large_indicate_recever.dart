@@ -162,7 +162,7 @@ class _ReceiveBytescharacteristic {
 
   String get key => _key;
 
-  final List<void Function(BlePeripheral, Uint8List)> _listeners = [];
+  final List<NotifyListener> _listeners = [];
   bool _notifyListenerAdded = false;
 
   void addLargeIndicateListener(NotifyListener listener) {
@@ -224,7 +224,7 @@ class _ReceiveBytescharacteristic {
   }
 
   void _onReceiveBytes(Uint8List data) {
-    List<void Function(BlePeripheral, Uint8List)> curlisteners = [];
+    List<NotifyListener> curlisteners = [];
     for (var listener in _listeners) {
       curlisteners.add(listener);
     }

@@ -1,6 +1,13 @@
 import 'package:ble_ex/ble_ex.dart';
 import 'package:ble_ex_example/samples/cases/base_case.dart';
+import 'package:ble_ex_example/samples/cases/ble_communication_case.dart';
+import 'package:ble_ex_example/samples/cases/bleex_communication_case.dart';
+import 'package:ble_ex_example/samples/cases/bleex_reqeust_case.dart';
+import 'package:ble_ex_example/samples/cases/bleex_reqeust_high_frequency_case.dart';
+import 'package:ble_ex_example/samples/cases/connect_by_dist_case.dart';
+import 'package:ble_ex_example/samples/cases/reconnect_case.dart';
 import 'package:ble_ex_example/samples/cases/scan_case.dart';
+import 'package:ble_ex_example/samples/cases/verify_central_case.dart';
 import 'package:flutter/material.dart';
 
 const String tag = "Main";
@@ -14,14 +21,14 @@ void main() async {
 
 void runSampleCase(BleEx bleex) {
   bleLog(tag, "Creating sample case");
-  // CaseBase sampleCase = VerifyCentralCase();
+  CaseBase sampleCase = VerifyCentralCase();
   // CaseBase sampleCase = ReconnectCase();
   // CaseBase sampleCase = BleCommunicationCase();
   // CaseBase sampleCase = BleexRequestCase();
-  // CaseBase sampleCase = BleexRequestHighFrequencyCase();
   // CaseBase sampleCase = BleexCommunicationCase();
+  // CaseBase sampleCase = BleexRequestHighFrequencyCase();
   // CaseBase sampleCase = ConnectByDistCase();
-  CaseBase sampleCase = ScanCase();
+  // CaseBase sampleCase = ScanCase();
 
   sampleCase.init(bleex);
   bleLog(tag, "Sample case created");

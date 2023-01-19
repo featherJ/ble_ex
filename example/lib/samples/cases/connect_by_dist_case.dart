@@ -32,7 +32,7 @@ class ConnectByDistCase extends CaseBase {
       if (dist > 0) {
         bleLog(tag,
             "Found device ${device.id} rssi:${device.rssi.toString()} dist:${dist.toString()}");
-        if (dist <= 0.05) {
+        if (dist <= 0.1) {
           bleex.stopScanDevices();
           peripheral = createPeripheral(device);
           peripheral.connect();

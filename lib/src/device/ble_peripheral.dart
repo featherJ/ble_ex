@@ -5,6 +5,8 @@ class BlePeripheral extends Object {
   static const String _tag = "BlePeripheral";
 
   late _SuggestMtuRequester _suggestMtuRequester;
+  late _BytesWriter _bytesWriter;
+  late _Requester _requester;
 
   /// 得到建议的mtu，-1表示为初始化
   int get suggestedMTU => _suggestMtuRequester.suggestedMtu;
@@ -20,8 +22,8 @@ class BlePeripheral extends Object {
     _self = this;
 
     _suggestMtuRequester = _SuggestMtuRequester(this);
-    // _requesHelper = _RequesHelper(this);
-    // _writeBytesHelper = _WriteBytesHelper(this);
+    _bytesWriter = _BytesWriter(this);
+    _requester = _Requester(this);
     // _receiveBytesHelper = _ReceiveBytesHelper(this);
     // _requestBytesHelper = _RequestBytesHelper(this);
     _device = _BlePeripheralCore._(deviceId, flutterReactiveBle);
@@ -220,50 +222,6 @@ class BlePeripheral extends Object {
     await _device.disconnect();
   }
 
-  /// 向一个 characteristic 写入数据数据
-  Future<void> writeWithResponse(
-      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
-    await ensureConnected();
-    await _device.writeCharacteristicWithResponse(
-        serviceId, characteristicId, data);
-  }
-
-  /// 向一个 characteristic 写入无应答数据数据
-  Future<void> writeWithoutResponse(
-      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
-    await ensureConnected();
-    await _device.writeCharacteristicWithoutResponse(
-        serviceId, characteristicId, data);
-  }
-
-  /// 从指定的 characteristic 读取数据
-  Future<Uint8List> read(Uuid serviceId, Uuid characteristicId) async {
-    await ensureConnected();
-    Uint8List result =
-        await _device.readCharacteristic(serviceId, characteristicId);
-    return result;
-  }
-
-  /// 请求修改mtu
-  Future<int> requestMtu(int mtu, {int timeout = 2000}) async {
-    await ensureConnected();
-    int result = await _device.requestMtu(mtu, timeout: timeout);
-    return result;
-  }
-
-  /// 请求优先级，仅在android上生效
-  Future<void> requestConnectionPriority(ConnectionPriority priority) async {
-    await ensureConnected();
-    await _device.requestConnectionPriority(priority);
-  }
-
-  /// 请求建议的MTU大小
-  Future<int> requestSuggestedMtu() async {
-    await ensureConnected();
-    int result = await _suggestMtuRequester.requestSuggestedMtu();
-    return result;
-  }
-
   /// 添加通知监听
   void addNotifyListener(Uuid serviceId, Uuid characteristicId,
       void Function(dynamic target, Uint8List data) listener) {
@@ -369,6 +327,71 @@ class BlePeripheral extends Object {
     }
     ensureConnectedFuture = completer.future;
     return ensureConnectedFuture!;
+  }
+
+  void checkConnected() {
+    if (disconnected || disposed) {
+      throw Exception("Can not call this after disposed or disconnected");
+    }
+  }
+
+  /// 请求修改mtu
+  Future<int> requestMtu(int mtu, {int timeout = 2000}) async {
+    checkConnected();
+    int result = await _device.requestMtu(mtu, timeout: timeout);
+    return result;
+  }
+
+  /// 请求优先级，仅在android上生效
+  Future<void> requestConnectionPriority(ConnectionPriority priority) async {
+    checkConnected();
+    await _device.requestConnectionPriority(priority);
+  }
+
+  /// 请求建议的MTU大小
+  Future<int> requestSuggestedMtu() async {
+    checkConnected();
+    int result = await _suggestMtuRequester.requestSuggestedMtu();
+    return result;
+  }
+
+  /// 向一个 characteristic 写入数据数据
+  Future<void> writeWithResponse(
+      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+    checkConnected();
+    await _device.writeCharacteristicWithResponse(
+        serviceId, characteristicId, data);
+  }
+
+  /// 向一个 characteristic 写入无应答数据数据
+  Future<void> writeWithoutResponse(
+      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+    checkConnected();
+    await _device.writeCharacteristicWithoutResponse(
+        serviceId, characteristicId, data);
+  }
+
+  /// 从指定的 characteristic 读取数据
+  Future<Uint8List> read(Uuid serviceId, Uuid characteristicId) async {
+    checkConnected();
+    Uint8List result =
+        await _device.readCharacteristic(serviceId, characteristicId);
+    return result;
+  }
+
+  /// 写数据，可以忽视mtu限制
+  /// 前提是已经调用了 initRequestSuggestMtu 初始化了最佳mtu
+  Future<void> writeBytes(
+      Uuid serviceId, Uuid characteristicId, Uint8List bytes) async {
+    checkConnected();
+    return _bytesWriter.write(serviceId, characteristicId, bytes);
+  }
+
+  /// 请求一个数据，受到mtu的限制
+  Future<Uint8List> request(
+      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+    checkConnected();
+    return _requester.request(serviceId, characteristicId, data);
   }
 
   /// 释放

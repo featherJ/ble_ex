@@ -12,16 +12,17 @@ class ConnectByDistCase extends CaseBase {
 
   @override
   Future<void> start() async {
-    bleManager.listenScanAddDevice(deviceScanHandler);
-    bleManager.listenScanUpdateDevice(deviceScanHandler);
-    bleManager.scanDevices(
-        manufacturerFilter: Constants.serviceManufacturerTag);
+    bleex.listenScanAddDevice(deviceScanHandler);
+    bleex.listenScanUpdateDevice(deviceScanHandler);
+    bleex.scanDevices(scanfilters: [
+      ManufacturerSampleFilter(Constants.serviceManufacturerTag).filter
+    ]);
   }
 
   void deviceScanHandler(DiscoveredDevice device) {
     var hasTargetService = false;
     for (int i = 0; i < device.serviceUuids.length; i++) {
-      if (device.serviceUuids[i].toString() == BleUUIDs.service.toString()) {
+      if (device.serviceUuids[i].toString() == BleUUIDs.service1.toString()) {
         hasTargetService = true;
         break;
       }
@@ -32,8 +33,8 @@ class ConnectByDistCase extends CaseBase {
         bleLog(tag,
             "Found device ${device.id} rssi:${device.rssi.toString()} dist:${dist.toString()}");
         if (dist <= 0.05) {
-          bleManager.stopScanDevices();
-          peripheral = createPeripheral(device, BleUUIDs.service);
+          bleex.stopScanDevices();
+          peripheral = createPeripheral(device);
           peripheral.connect();
         }
       }
@@ -41,13 +42,13 @@ class ConnectByDistCase extends CaseBase {
   }
 
   @override
-  Future<void> connectedHandler(dynamic target) async {
+  Future<void> connectedHandler(BlePeripheral target) async {
     super.connectedHandler(target);
     bleLog(tag, " ---------------------------------- ");
     bleLog(tag, "Verify current device");
     try {
-      Uint8List verifyResult =
-          await peripheral.request(BleUUIDs.verifyCentral, Constants.verifyTag);
+      Uint8List verifyResult = await peripheral.request(
+          BleUUIDs.service1, BleUUIDs.verifyCentral, Constants.verifyTag);
       if (verifyResult.isNotEmpty && verifyResult[0] == 1) {
         bleLog(tag, "verification succeeded");
       } else {

@@ -2,11 +2,11 @@ part of ble_ex;
 
 class _SingleRequester {
   final Uuid _requestCharacteristic;
-  final Uuid _requestServiceId;
+  final Uuid _requestService;
   BlePeripheral? _blePeripheral;
   int _requestIndex = 0;
-  _SingleRequester(this._requestServiceId, this._requestCharacteristic,
-      this._blePeripheral) {
+  _SingleRequester(
+      this._requestService, this._requestCharacteristic, this._blePeripheral) {
     _requestIndex = _getIndex('reqeust');
     _blePeripheral!.addDisconnectedListener(_disconnectHandler);
     _blePeripheral!.addConnectErrorListener(_connectErrorHandler);
@@ -20,12 +20,12 @@ class _SingleRequester {
     _onComplete = onComplete;
     _onError = onError;
     _blePeripheral!.addNotifyListener(
-        _requestServiceId, _requestCharacteristic, _notifyHandler);
+        _requestService, _requestCharacteristic, _notifyHandler);
     List<int> finalList = [_requestIndex, ...data.toList()];
     Uint8List finalData = Uint8List.fromList(finalList);
     try {
       await _blePeripheral!.writeWithResponse(
-          _requestServiceId, _requestCharacteristic, finalData);
+          _requestService, _requestCharacteristic, finalData);
     } catch (e) {
       clear();
       if (!callbacked) {
@@ -35,7 +35,8 @@ class _SingleRequester {
     }
   }
 
-  Future<void> _notifyHandler(dynamic target, Uint8List data) async {
+  Future<void> _notifyHandler(
+      BlePeripheral target, Uuid s, Uuid c, Uint8List data) async {
     List<int> response = data.toList();
     if (response.isEmpty) {
       return;
@@ -71,7 +72,7 @@ class _SingleRequester {
 
   Future<void> clear() async {
     await _blePeripheral?.removeNotifyListener(
-        _requestServiceId, _requestCharacteristic, _notifyHandler);
+        _requestService, _requestCharacteristic, _notifyHandler);
     _blePeripheral?.removeDisconnectedListener(_disconnectHandler);
     _blePeripheral?.removeConnectErrorListener(_connectErrorHandler);
     _blePeripheral = null;
@@ -82,11 +83,11 @@ class _Requester {
   final BlePeripheral _blePeripheral;
   _Requester(this._blePeripheral);
   Future<Uint8List> request(
-      Uuid serviceId, Uuid characteristicId, Uint8List request) {
+      Uuid service, Uuid characteristic, Uint8List request) {
     Completer<Uint8List> completer = Completer();
 
     _SingleRequester requester =
-        _SingleRequester(serviceId, characteristicId, _blePeripheral);
+        _SingleRequester(service, characteristic, _blePeripheral);
     requester.request(request, (result) {
       completer.complete(result);
     }, (error) {

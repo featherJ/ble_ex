@@ -6,10 +6,9 @@ class _LargerWriter {
   final BlePeripheral _blePeripheral;
   _LargerWriter(this._blePeripheral);
 
-  Future<void> write(
-      Uuid serviceId, Uuid characteristicId, Uint8List bytes) async {
+  Future<void> write(Uuid service, Uuid characteristic, Uint8List bytes) async {
     bleLog(_tag,
-        "Writing bytes(length:${bytes.length}) to {service:${serviceId.toString()}, characteristic:${characteristicId.toString()}}.");
+        "Writing bytes(length:${bytes.length}) to {service:${service.toString()}, characteristic:${characteristic.toString()}}.");
 
     var requestIndex = _getIndex("write");
     var packageSize = _blePeripheral.packageSize;
@@ -84,7 +83,7 @@ class _LargerWriter {
     while (packages.isNotEmpty) {
       var package = packages.removeAt(0);
       await _blePeripheral.writeWithResponse(
-          serviceId, characteristicId, Uint8List.fromList(package));
+          service, characteristic, Uint8List.fromList(package));
     }
   }
 }

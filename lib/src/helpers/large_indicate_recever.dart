@@ -154,11 +154,11 @@ class _ReceiveBytescharacteristic {
 
   final String _key;
   final BlePeripheral _blePeripheral;
-  final Uuid _serviceId;
-  final Uuid _characteristicId;
+  final Uuid _service;
+  final Uuid _characteristic;
   final BlePeripheral _target;
-  _ReceiveBytescharacteristic(this._key, this._blePeripheral, this._serviceId,
-      this._characteristicId, this._target);
+  _ReceiveBytescharacteristic(this._key, this._blePeripheral, this._service,
+      this._characteristic, this._target);
 
   String get key => _key;
 
@@ -170,7 +170,7 @@ class _ReceiveBytescharacteristic {
     if (!_notifyListenerAdded) {
       _notifyListenerAdded = true;
       _blePeripheral.addNotifyListener(
-          _serviceId, _characteristicId, notifyHandler);
+          _service, _characteristic, notifyHandler);
     }
   }
 
@@ -179,12 +179,12 @@ class _ReceiveBytescharacteristic {
     if (_listeners.isEmpty) {
       _notifyListenerAdded = false;
       await _blePeripheral.removeNotifyListener(
-          _serviceId, _characteristicId, notifyHandler);
+          _service, _characteristic, notifyHandler);
     }
   }
 
   final Map<int, _BytesRecevier> _bytesReceviers = {};
-  void notifyHandler(BlePeripheral target, Uint8List pack) {
+  void notifyHandler(BlePeripheral target, Uuid s, Uuid c, Uint8List pack) {
     int requestIndex = -1;
     if (pack.isNotEmpty) {
       requestIndex = pack[0];
@@ -203,14 +203,14 @@ class _ReceiveBytescharacteristic {
         _BytesRecevier newReceiver = _BytesRecevier(requestIndex);
         newReceiver.setCallback((requestIndex, data) {
           bleLog(_tag,
-              "Receive large bytes(length:${data.length.toString()}) complete with index:${requestIndex.toString()} from {service:${_serviceId.toString()}, characteristic:${_characteristicId.toString()}}.");
+              "Receive large bytes(length:${data.length.toString()}) complete with index:${requestIndex.toString()} from {service:${_service.toString()}, characteristic:${_characteristic.toString()}}.");
           _onReceiveBytes(data);
         }, (requestIndex) {
           bleLog(_tag,
-              "Receive large bytes error with index:${requestIndex.toString()} from {service:${_serviceId.toString()}, characteristic:${_characteristicId.toString()}}.");
+              "Receive large bytes error with index:${requestIndex.toString()} from {service:${_service.toString()}, characteristic:${_characteristic.toString()}}.");
         }, (requestIndex) {
           bleLog(_tag,
-              "Receive large bytes timeout with index:${requestIndex.toString()} from {service:${_serviceId.toString()}, characteristic:${_characteristicId.toString()}}.");
+              "Receive large bytes timeout with index:${requestIndex.toString()} from {service:${_service.toString()}, characteristic:${_characteristic.toString()}}.");
         }, (requestIndex) {
           _bytesReceviers.remove(requestIndex);
         });
@@ -229,7 +229,7 @@ class _ReceiveBytescharacteristic {
       curlisteners.add(listener);
     }
     for (var listener in curlisteners) {
-      listener(_target, data);
+      listener(_target, _service, _characteristic, data);
     }
   }
 
@@ -237,7 +237,7 @@ class _ReceiveBytescharacteristic {
     _listeners.clear();
     _notifyListenerAdded = false;
     _blePeripheral.removeNotifyListener(
-        _serviceId, _characteristicId, notifyHandler);
+        _service, _characteristic, notifyHandler);
   }
 }
 
@@ -249,15 +249,15 @@ class _LargeIndicateReceiver {
   Map<String, _ReceiveBytescharacteristic> receiveMap = {};
 
   /// 添加长数据监听
-  void addLargeIndicateListener(Uuid serviceId, Uuid characteristicId,
+  void addLargeIndicateListener(Uuid service, Uuid characteristic,
       NotifyListener listener, BlePeripheral target) {
-    var key = serviceId.toString() + "-" + characteristicId.toString();
+    var key = service.toString() + "-" + characteristic.toString();
     _ReceiveBytescharacteristic? receiver;
     if (receiveMap.containsKey(key)) {
       receiver = receiveMap[key];
     } else {
       receiver = _ReceiveBytescharacteristic(
-          key, _blePeripheral, serviceId, characteristicId, target);
+          key, _blePeripheral, service, characteristic, target);
       receiveMap[key] = receiver;
     }
     receiver!.addLargeIndicateListener(listener);
@@ -265,8 +265,8 @@ class _LargeIndicateReceiver {
 
   /// 移除长数据监听
   Future<void> removeLargeIndicateListener(
-      Uuid serviceId, Uuid characteristicId, NotifyListener listener) async {
-    var key = serviceId.toString() + "-" + characteristicId.toString();
+      Uuid service, Uuid characteristic, NotifyListener listener) async {
+    var key = service.toString() + "-" + characteristic.toString();
     if (receiveMap.containsKey(key)) {
       _ReceiveBytescharacteristic receiver = receiveMap[key]!;
       await receiver.removeLargeIndicateListener(listener);

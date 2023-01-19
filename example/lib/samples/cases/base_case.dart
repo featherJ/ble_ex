@@ -1,44 +1,44 @@
 import 'package:ble_ex/ble_ex.dart';
 import 'package:ble_ex_example/samples/ble_uuids.dart';
 import 'package:ble_ex_example/samples/constants.dart';
-import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 class CaseBase {
   static const String tag = "CaseBase";
-
-  late BleManager bleManager;
-  void init(BleManager bleManager) {
-    this.bleManager = bleManager;
+  late BleEx bleex;
+  void init(BleEx bleex) {
+    this.bleex = bleex;
   }
 
-  late BlePeripheralService peripheral;
+  late BlePeripheral peripheral;
   Future<void> start() async {
-    var device = await bleManager.scanForDevice(BleUUIDs.service,
-        manufacturerFilter: Constants.serviceManufacturerTag);
+    var device = await bleex.lookForDevice([
+      ServiceSampleFilter(BleUUIDs.service1).filter,
+      ManufacturerSampleFilter(Constants.serviceManufacturerTag).filter
+    ]);
+
     bleLog(tag, 'Find device: ' + device.toString());
-    peripheral = createPeripheral(device, BleUUIDs.service);
+    peripheral = createPeripheral(device);
     peripheral.connect();
   }
 
-  BlePeripheralService createPeripheral(
-      DiscoveredDevice device, Uuid serviceId) {
-    BlePeripheralService peripheral =
-        bleManager.createPeripheralService(device, serviceId);
+  BlePeripheral createPeripheral(DiscoveredDevice device) {
+    BlePeripheral peripheral =
+        bleex.createPeripheral<BlePeripheral>(device, BlePeripheral());
     peripheral.addConnectedListener(connectedHandler);
     peripheral.addDisconnectedListener(disconnectedHandler);
     peripheral.addConnectErrorListener(connectErrorHandler);
     return peripheral;
   }
 
-  void connectedHandler(dynamic target) {
+  void connectedHandler(BlePeripheral target) {
     bleLog(tag, "Connected to service");
   }
 
-  void disconnectedHandler(dynamic target) {
+  void disconnectedHandler(BlePeripheral target) {
     bleLog(tag, "Disonnected from service");
   }
 
-  void connectErrorHandler(dynamic target, Object error) {
+  void connectErrorHandler(BlePeripheral target, Object error) {
     bleLog(tag, "Connect error ${error.toString()}");
   }
 }

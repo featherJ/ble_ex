@@ -1,6 +1,7 @@
 part of ble_ex;
 
-typedef NotifyListener = void Function(BlePeripheral target, Uint8List data);
+typedef NotifyListener = void Function(
+    BlePeripheral target, Uuid service, Uuid characteristic, Uint8List data);
 typedef ConnectionListener = void Function(BlePeripheral target);
 typedef ConnectionErrorListener = void Function(
     BlePeripheral target, Object error);
@@ -102,10 +103,10 @@ class BlePeripheral extends Object {
       var notifyData = notifyMap[key]!;
       if (notifyData.streamSubscription == null) {
         bleLog(_tag,
-            "Recovering serviceID:${notifyData.serviceId.toString()} characteristicId:${notifyData.characteristicId.toString()}");
+            "Recovering service:${notifyData.service.toString()} characteristic:${notifyData.characteristic.toString()}");
         StreamSubscription<Uint8List> stream = _device
             .subscribeToCharacteristic(
-                notifyData.serviceId, notifyData.characteristicId)
+                notifyData.service, notifyData.characteristic)
             .listen((data) {
           notifyData.callAll(_self, data);
         });
@@ -122,7 +123,7 @@ class BlePeripheral extends Object {
     for (var key in keys) {
       var notifyData = notifyMap[key];
       bleLog(_tag,
-          'Canceling serviceID:${notifyData?.serviceId.toString()} characteristicId:${notifyData?.characteristicId.toString()}');
+          'Canceling service:${notifyData?.service.toString()} characteristic:${notifyData?.characteristic.toString()}');
       await notifyData?.streamSubscription?.cancel();
       notifyData?.streamSubscription = null;
     }
@@ -213,9 +214,9 @@ class BlePeripheral extends Object {
   }
 
   /// 连接
-  void connectToAdvertisingDevice(Uuid serviceId,
+  void connectToAdvertisingDevice(Uuid service,
       {int timeoutMilliseconds = 2000}) {
-    _device.connectToAdvertisingDevice(serviceId,
+    _device.connectToAdvertisingDevice(service,
         timeoutMilliseconds: timeoutMilliseconds);
   }
 
@@ -227,16 +228,16 @@ class BlePeripheral extends Object {
 
   /// 添加通知监听
   void addNotifyListener(
-      Uuid serviceId, Uuid characteristicId, NotifyListener listener) {
-    String key = serviceId.toString().toLowerCase() +
+      Uuid service, Uuid characteristic, NotifyListener listener) {
+    String key = service.toString().toLowerCase() +
         "-" +
-        characteristicId.toString().toLowerCase();
+        characteristic.toString().toLowerCase();
 
     late _NotifyData notifyData;
     if (notifyMap.containsKey(key)) {
       notifyData = notifyMap[key]!;
     } else {
-      notifyData = _NotifyData(serviceId, characteristicId);
+      notifyData = _NotifyData(service, characteristic);
       notifyMap[key] = notifyData;
     }
     notifyData.addListener(listener);
@@ -246,7 +247,7 @@ class BlePeripheral extends Object {
       //没注册过就注册进去一个
       if (notifyData.streamSubscription == null) {
         StreamSubscription<Uint8List> stream = _device
-            .subscribeToCharacteristic(serviceId, characteristicId)
+            .subscribeToCharacteristic(service, characteristic)
             .listen((data) {
           notifyData.callAll(_self, data);
         });
@@ -257,10 +258,10 @@ class BlePeripheral extends Object {
 
   /// 移除通知监听
   Future<void> removeNotifyListener(
-      Uuid serviceId, Uuid characteristicId, NotifyListener listener) async {
-    String key = serviceId.toString().toLowerCase() +
+      Uuid service, Uuid characteristic, NotifyListener listener) async {
+    String key = service.toString().toLowerCase() +
         "-" +
-        characteristicId.toString().toLowerCase();
+        characteristic.toString().toLowerCase();
 
     _NotifyData? notifyData;
     if (notifyMap.containsKey(key)) {
@@ -360,62 +361,62 @@ class BlePeripheral extends Object {
 
   /// 向一个 characteristic 写入数据数据
   Future<void> writeWithResponse(
-      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+      Uuid service, Uuid characteristic, Uint8List data) async {
     checkConnected();
     await _device.writeCharacteristicWithResponse(
-        serviceId, characteristicId, data);
+        service, characteristic, data);
   }
 
   /// 向一个 characteristic 写入无应答数据数据
   Future<void> writeWithoutResponse(
-      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+      Uuid service, Uuid characteristic, Uint8List data) async {
     checkConnected();
     await _device.writeCharacteristicWithoutResponse(
-        serviceId, characteristicId, data);
+        service, characteristic, data);
   }
 
   /// 从指定的 characteristic 读取数据
-  Future<Uint8List> read(Uuid serviceId, Uuid characteristicId) async {
+  Future<Uint8List> read(Uuid service, Uuid characteristic) async {
     checkConnected();
     Uint8List result =
-        await _device.readCharacteristic(serviceId, characteristicId);
+        await _device.readCharacteristic(service, characteristic);
     return result;
   }
 
   /// 写数据，可以忽视mtu限制
   /// 前提是已经调用了 initRequestSuggestMtu 初始化了最佳mtu
   Future<void> writeLarge(
-      Uuid serviceId, Uuid characteristicId, Uint8List bytes) async {
+      Uuid service, Uuid characteristic, Uint8List bytes) async {
     checkConnected();
-    return _largeWriter.write(serviceId, characteristicId, bytes);
+    return _largeWriter.write(service, characteristic, bytes);
   }
 
   /// 请求一个数据，受到mtu的限制
   Future<Uint8List> request(
-      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+      Uuid service, Uuid characteristic, Uint8List data) async {
     checkConnected();
-    return _requester.request(serviceId, characteristicId, data);
+    return _requester.request(service, characteristic, data);
   }
 
   /// 添加一个长数据的监听
   void addLargeIndicateListener(
-      Uuid serviceId, Uuid characteristicId, NotifyListener listener) {
+      Uuid service, Uuid characteristic, NotifyListener listener) {
     _largeIndicateReceiver.addLargeIndicateListener(
-        serviceId, characteristicId, listener, _self);
+        service, characteristic, listener, _self);
   }
 
   /// 移除一个长数据的监听
   Future<void> removeLargeIndicateListener(
-      Uuid serviceId, Uuid characteristicId, NotifyListener listener) async {
+      Uuid service, Uuid characteristic, NotifyListener listener) async {
     await _largeIndicateReceiver.removeLargeIndicateListener(
-        serviceId, characteristicId, listener);
+        service, characteristic, listener);
   }
 
   /// 请求一个数据，不受到mtu的限制
   Future<Uint8List> requestLarge(
-      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+      Uuid service, Uuid characteristic, Uint8List data) async {
     checkConnected();
-    return _largeRequester.request(serviceId, characteristicId, data);
+    return _largeRequester.request(service, characteristic, data);
   }
 
   /// 释放

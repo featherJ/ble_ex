@@ -9,13 +9,13 @@ class BleexRequestHighFrequencyCase extends CaseBase {
   static const String tag = "BleexRequestHighFrequencyCase";
 
   @override
-  Future<void> connectedHandler(dynamic target) async {
+  Future<void> connectedHandler(BlePeripheral target) async {
     super.connectedHandler(target);
     bleLog(tag, " ---------------------------------- ");
     bleLog(tag, "Verify current device");
     try {
-      Uint8List verifyResult =
-          await peripheral.request(BleUUIDs.verifyCentral, Constants.verifyTag);
+      Uint8List verifyResult = await peripheral.request(
+          BleUUIDs.service1, BleUUIDs.verifyCentral, Constants.verifyTag);
       if (verifyResult.isNotEmpty && verifyResult[0] == 1) {
         bleLog(tag, "verification succeeded");
       } else {
@@ -26,10 +26,14 @@ class BleexRequestHighFrequencyCase extends CaseBase {
     }
 
     bleLog(tag, " ---------------------------------- ");
-
     bleLog(tag, "Initialize the suggested mtu value");
     int suggestedMtu = await peripheral.requestSuggestedMtu();
     bleLog(tag, "Suggested mtu value is $suggestedMtu");
+
+    bleLog(tag, " ---------------------------------- ");
+    bleLog(tag, "request connection high performance");
+    await peripheral
+        .requestConnectionPriority(ConnectionPriority.highPerformance);
 
     bleLog(tag, " ---------------------------------- ");
     request(1);
@@ -62,8 +66,8 @@ class BleexRequestHighFrequencyCase extends CaseBase {
     bleLog(
         tag, "Requesting bytes(length: ${data.length}) from peripheral $index");
     try {
-      var reaultData = await peripheral.requestBytes(
-          BleUUIDs.requestLargeDataTest, Uint8List.fromList(data));
+      var reaultData = await peripheral.requestLarge(BleUUIDs.service1,
+          BleUUIDs.requestLargeTest, Uint8List.fromList(data));
       bleLog(tag,
           "Request bytes(length: ${reaultData.length}) from peripheral $index succeeded: ${reaultData.toList()}");
     } catch (e) {

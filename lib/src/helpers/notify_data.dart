@@ -3,11 +3,11 @@ part of ble_ex;
 /// 通知数据
 class _NotifyData {
   final List<NotifyListener> _listeners = [];
-  final Uuid _serviceId;
-  Uuid get serviceId => _serviceId;
-  final Uuid _characteristicId;
-  Uuid get characteristicId => _characteristicId;
-  _NotifyData(this._serviceId, this._characteristicId);
+  final Uuid _service;
+  Uuid get service => _service;
+  final Uuid _characteristic;
+  Uuid get characteristic => _characteristic;
+  _NotifyData(this._service, this._characteristic);
 
   StreamSubscription<Uint8List>? streamSubscription;
 
@@ -34,7 +34,7 @@ class _NotifyData {
       curListeners.add(listener);
     }
     for (var listener in curListeners) {
-      listener(target, data);
+      listener(target, service, characteristic, data);
     }
   }
 

@@ -11,7 +11,7 @@ class VerifyCentralCase extends CaseBase {
   bool verifyCorrectFlag = false;
   bool verifyErrorFlag = false;
   @override
-  Future<void> connectedHandler(dynamic target) async {
+  Future<void> connectedHandler(BlePeripheral target) async {
     super.connectedHandler(target);
     bleLog(tag, " ---------------------------------- ");
     var verified = false;
@@ -22,7 +22,7 @@ class VerifyCentralCase extends CaseBase {
       bleLog(tag, "------- Start verify correct test -------");
       try {
         Uint8List verifyResult = await peripheral.request(
-            BleUUIDs.verifyCentral, Constants.verifyTag);
+            BleUUIDs.service1, BleUUIDs.verifyCentral, Constants.verifyTag);
         if (verifyResult.isNotEmpty && verifyResult[0] == 1) {
           bleLog(tag, "verification succeeded");
         } else {
@@ -39,7 +39,7 @@ class VerifyCentralCase extends CaseBase {
       verifyErrorFlag = true;
       bleLog(tag, "------- Start verify fail test -------");
       try {
-        Uint8List verifyResult = await peripheral.request(
+        Uint8List verifyResult = await peripheral.request(BleUUIDs.service1,
             BleUUIDs.verifyCentral, Uint8List.fromList([0, 0, 0, 0]));
         if (verifyResult.isNotEmpty && verifyResult[0] == 1) {
           bleLog(tag, "verification succeeded");

@@ -3,11 +3,11 @@ part of ble_ex;
 /// 单次有应答的请求
 class _SingleLargeRequester {
   BlePeripheral? _blePeripheral;
-  final Uuid? _serviceId;
-  final Uuid? _characteristicId;
+  final Uuid? _service;
+  final Uuid? _characteristic;
   int _requestIndex = 0;
   _SingleLargeRequester(
-      this._serviceId, this._characteristicId, this._blePeripheral) {
+      this._service, this._characteristic, this._blePeripheral) {
     _requestIndex = _getIndex("largetRequest");
     _blePeripheral!.addDisconnectedListener(_disconnectHandler);
     _blePeripheral!.addConnectErrorListener(_connectErrorHandler);
@@ -22,7 +22,7 @@ class _SingleLargeRequester {
     _onComplete = onComplete;
     _onError = onError;
     _blePeripheral!.addLargeIndicateListener(
-        _serviceId!, _characteristicId!, _largetIndicateHandler);
+        _service!, _characteristic!, _largetIndicateHandler);
     List<int> finalList = [
       _DataTags.msRequestLarge[0],
       _DataTags.msRequestLarge[1],
@@ -31,8 +31,7 @@ class _SingleLargeRequester {
     ];
     finalData = Uint8List.fromList(finalList);
     try {
-      await _blePeripheral!
-          .writeLarge(_serviceId!, _characteristicId!, finalData);
+      await _blePeripheral!.writeLarge(_service!, _characteristic!, finalData);
     } catch (e) {
       clear();
       if (!callbacked && _onError != null) {
@@ -42,7 +41,8 @@ class _SingleLargeRequester {
     }
   }
 
-  Future<void> _largetIndicateHandler(dynamic target, Uint8List data) async {
+  Future<void> _largetIndicateHandler(
+      BlePeripheral target, Uuid s, Uuid c, Uint8List data) async {
     List<int> response = data.toList();
     if (response.length < 3) {
       return;
@@ -83,7 +83,7 @@ class _SingleLargeRequester {
 
   Future<void> clear() async {
     await _blePeripheral?.removeLargeIndicateListener(
-        _serviceId!, _characteristicId!, _largetIndicateHandler);
+        _service!, _characteristic!, _largetIndicateHandler);
     _blePeripheral?.removeDisconnectedListener(_disconnectHandler);
     _blePeripheral?.removeConnectErrorListener(_connectErrorHandler);
     _blePeripheral = null;
@@ -95,11 +95,11 @@ class _LargeRequester {
   final BlePeripheral _blePeripheral;
   _LargeRequester(this._blePeripheral);
   Future<Uint8List> request(
-      Uuid serviceId, Uuid characteristicId, Uint8List request) {
+      Uuid service, Uuid characteristic, Uint8List request) {
     Completer<Uint8List> completer = Completer();
 
     _SingleLargeRequester requester =
-        _SingleLargeRequester(serviceId, characteristicId, _blePeripheral);
+        _SingleLargeRequester(service, characteristic, _blePeripheral);
     requester.request(request, (result) {
       completer.complete(result);
     }, (error) {

@@ -1,12 +1,18 @@
 part of ble_ex;
 
+typedef NotifyListener = void Function(BlePeripheral target, Uint8List data);
+typedef ConnectionListener = void Function(BlePeripheral target);
+typedef ConnectionErrorListener = void Function(
+    BlePeripheral target, Object error);
+
 /// 从设备
 class BlePeripheral extends Object {
   static const String _tag = "BlePeripheral";
 
   late _SuggestMtuRequester _suggestMtuRequester;
-  late _BytesWriter _bytesWriter;
+  late _LargerWriter _largeWriter;
   late _Requester _requester;
+  late _LargeIndicateReceiver _largeIndicateReceiver;
 
   /// 得到建议的mtu，-1表示为初始化
   int get suggestedMTU => _suggestMtuRequester.suggestedMtu;
@@ -22,9 +28,9 @@ class BlePeripheral extends Object {
     _self = this;
 
     _suggestMtuRequester = _SuggestMtuRequester(this);
-    _bytesWriter = _BytesWriter(this);
+    _largeWriter = _LargerWriter(this);
     _requester = _Requester(this);
-    // _receiveBytesHelper = _ReceiveBytesHelper(this);
+    _largeIndicateReceiver = _LargeIndicateReceiver(this);
     // _requestBytesHelper = _RequestBytesHelper(this);
     _device = _BlePeripheralCore._(deviceId, flutterReactiveBle);
     _device.state.listen((event) {
@@ -145,14 +151,14 @@ class BlePeripheral extends Object {
   final List<void Function(BlePeripheral, Object)> _connectErrorListeners = [];
 
   /// 添加已连接的监听
-  void addConnectedListener(void Function(BlePeripheral target) listener) {
+  void addConnectedListener(ConnectionListener listener) {
     if (!_connectedListeners.contains(listener)) {
       _connectedListeners.add(listener);
     }
   }
 
   /// 移除已连接的监听
-  void removeConnectedListener(void Function(BlePeripheral target) listener) {
+  void removeConnectedListener(ConnectionListener listener) {
     if (_connectedListeners.contains(listener)) {
       _connectedListeners.remove(listener);
     }
@@ -164,15 +170,14 @@ class BlePeripheral extends Object {
   }
 
   /// 添加断开连接的监听
-  void addDisconnectedListener(void Function(BlePeripheral target) listener) {
+  void addDisconnectedListener(ConnectionListener listener) {
     if (!_disconnectedListeners.contains(listener)) {
       _disconnectedListeners.add(listener);
     }
   }
 
   /// 移除断开连接的监听
-  void removeDisconnectedListener(
-      void Function(BlePeripheral target) listener) {
+  void removeDisconnectedListener(ConnectionListener listener) {
     if (_disconnectedListeners.contains(listener)) {
       _disconnectedListeners.remove(listener);
     }
@@ -184,16 +189,14 @@ class BlePeripheral extends Object {
   }
 
   /// 添加连接错误的监听
-  void addConnectErrorListener(
-      void Function(BlePeripheral target, Object error) listener) {
+  void addConnectErrorListener(ConnectionErrorListener listener) {
     if (!_connectErrorListeners.contains(listener)) {
       _connectErrorListeners.add(listener);
     }
   }
 
   /// 移除连接错误的监听
-  void removeConnectErrorListener(
-      void Function(BlePeripheral target, Object error) listener) {
+  void removeConnectErrorListener(ConnectionErrorListener listener) {
     if (_connectErrorListeners.contains(listener)) {
       _connectErrorListeners.remove(listener);
     }
@@ -223,8 +226,8 @@ class BlePeripheral extends Object {
   }
 
   /// 添加通知监听
-  void addNotifyListener(Uuid serviceId, Uuid characteristicId,
-      void Function(dynamic target, Uint8List data) listener) {
+  void addNotifyListener(
+      Uuid serviceId, Uuid characteristicId, NotifyListener listener) {
     String key = serviceId.toString().toLowerCase() +
         "-" +
         characteristicId.toString().toLowerCase();
@@ -253,8 +256,8 @@ class BlePeripheral extends Object {
   }
 
   /// 移除通知监听
-  Future<void> removeNotifyListener(Uuid serviceId, Uuid characteristicId,
-      void Function(dynamic target, Uint8List data) listener) async {
+  Future<void> removeNotifyListener(
+      Uuid serviceId, Uuid characteristicId, NotifyListener listener) async {
     String key = serviceId.toString().toLowerCase() +
         "-" +
         characteristicId.toString().toLowerCase();
@@ -381,10 +384,10 @@ class BlePeripheral extends Object {
 
   /// 写数据，可以忽视mtu限制
   /// 前提是已经调用了 initRequestSuggestMtu 初始化了最佳mtu
-  Future<void> writeBytes(
+  Future<void> writeLarge(
       Uuid serviceId, Uuid characteristicId, Uint8List bytes) async {
     checkConnected();
-    return _bytesWriter.write(serviceId, characteristicId, bytes);
+    return _largeWriter.write(serviceId, characteristicId, bytes);
   }
 
   /// 请求一个数据，受到mtu的限制
@@ -392,6 +395,26 @@ class BlePeripheral extends Object {
       Uuid serviceId, Uuid characteristicId, Uint8List data) async {
     checkConnected();
     return _requester.request(serviceId, characteristicId, data);
+  }
+
+  /// 添加一个长数据的监听
+  void addLargeIndicateListener(
+      Uuid serviceId, Uuid characteristicId, NotifyListener listener) {
+    if (disconnected || disposed) {
+      throw Exception("Can not call this after disposed or disconnected");
+    }
+    _largeIndicateReceiver.addLargeIndicateListener(
+        serviceId, characteristicId, listener, _self);
+  }
+
+  /// 移除一个长数据的监听
+  Future<void> removeLargeIndicateListener(
+      Uuid serviceId, Uuid characteristicId, NotifyListener listener) async {
+    if (disconnected || disposed) {
+      throw Exception("Can not call this after disposed or disconnected");
+    }
+    await _largeIndicateReceiver.removeLargeIndicateListener(
+        serviceId, characteristicId, listener);
   }
 
   /// 释放

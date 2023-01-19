@@ -16,10 +16,13 @@ part 'core/byte_index.dart';
 part 'device/ble_peripheral_core.dart';
 part 'device/ble_peripheral.dart';
 
-part 'helpers/bytes_writer.dart';
+part 'helpers/large_writer.dart';
 part 'helpers/notify_data.dart';
 part 'helpers/requester.dart';
 part 'helpers/suggest_mtu_requester.dart';
+part 'helpers/large_indicate_recever.dart';
+
+typedef ScanningListener = void Function(DiscoveredDevice device);
 
 class _BleStatusIniter {
   final FlutterReactiveBle _flutterReactiveBle;
@@ -213,19 +216,17 @@ class BleEx extends Object {
   }
 
   bool fireScanEvent = true;
-  final List<void Function(DiscoveredDevice device)> _scanAddDeviceFuncs = [];
-  final List<void Function(DiscoveredDevice device)> _scanUpdateDeviceFuncs =
-      [];
-  final List<void Function(DiscoveredDevice device)> _scanRemoveDeviceFuncs =
-      [];
+  final List<ScanningListener> _scanAddDeviceFuncs = [];
+  final List<ScanningListener> _scanUpdateDeviceFuncs = [];
+  final List<ScanningListener> _scanRemoveDeviceFuncs = [];
 
   /// 扫描添加一个设备的监听
-  void listenScanAddDevice(void Function(DiscoveredDevice device) listener) {
+  void listenScanAddDevice(ScanningListener listener) {
     _scanAddDeviceFuncs.add(listener);
   }
 
   /// 移除扫描添加一个设备的监听
-  void unlistenScanAddDevice(void Function(DiscoveredDevice device) listener) {
+  void unlistenScanAddDevice(ScanningListener listener) {
     _scanAddDeviceFuncs.remove(listener);
   }
 
@@ -235,13 +236,12 @@ class BleEx extends Object {
   }
 
   /// 扫描更新一个设备的监听
-  void listenScanUpdateDevice(void Function(DiscoveredDevice device) listener) {
+  void listenScanUpdateDevice(ScanningListener listener) {
     _scanUpdateDeviceFuncs.add(listener);
   }
 
   /// 移除扫描更新一个设备的监听
-  void unlistenScanUpdateDevice(
-      void Function(DiscoveredDevice device) listener) {
+  void unlistenScanUpdateDevice(ScanningListener listener) {
     _scanUpdateDeviceFuncs.remove(listener);
   }
 
@@ -251,13 +251,12 @@ class BleEx extends Object {
   }
 
   /// 扫描删除一个设备的监听
-  void listenScanRemoveDevice(void Function(DiscoveredDevice device) listener) {
+  void listenScanRemoveDevice(ScanningListener listener) {
     _scanRemoveDeviceFuncs.add(listener);
   }
 
   /// 移除扫描删除一个设备的监听
-  void unlistenScanRemoveDevice(
-      void Function(DiscoveredDevice device) listener) {
+  void unlistenScanRemoveDevice(ScanningListener listener) {
     _scanRemoveDeviceFuncs.remove(listener);
   }
 
@@ -266,7 +265,7 @@ class BleEx extends Object {
     _scanRemoveDeviceFuncs.clear();
   }
 
-  void Function(DiscoveredDevice device)? _findTargetDeviceFunc;
+  ScanningListener? _findTargetDeviceFunc;
   void _checkDeviceLookingFor(DiscoveredDevice device) {
     if (_findTargetDeviceFunc != null && _lookFilters.isNotEmpty) {
       for (var filter in _lookFilters) {

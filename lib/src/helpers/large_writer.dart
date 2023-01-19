@@ -1,10 +1,10 @@
 part of ble_ex;
 
 /// 长数据发送器
-class _BytesWriter {
+class _LargerWriter {
   static const String _tag = "LargeWriter";
   final BlePeripheral _blePeripheral;
-  _BytesWriter(this._blePeripheral);
+  _LargerWriter(this._blePeripheral);
 
   Future<void> write(
       Uuid serviceId, Uuid characteristicId, Uint8List bytes) async {

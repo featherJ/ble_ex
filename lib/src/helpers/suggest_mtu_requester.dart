@@ -1,7 +1,7 @@
 part of ble_ex;
 
-/// Mtu申请
-class _MtuHelper {
+/// 最佳Mtu申请
+class _SuggestMtuRequester {
   static const List<int> muts = [103, 241, 512];
   static const int minMtu = 23;
 
@@ -17,7 +17,7 @@ class _MtuHelper {
   /// 可发送的包的大小
   int get packageSize => _packageSize;
 
-  _MtuHelper(this._blePeripheral);
+  _SuggestMtuRequester(this._blePeripheral);
 
   Future<int>? finalFuture;
 

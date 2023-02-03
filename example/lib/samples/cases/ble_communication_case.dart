@@ -7,148 +7,81 @@ import 'package:ble_ex_example/samples/constants.dart';
 
 class BleCommunicationCase extends CaseBase {
   static const String tag = "BleCommunicationCase";
-
-  final int logId;
-  BleCommunicationCase({required this.logId});
-
   @override
-  BlePeripheralService createPeripheral(
-      DiscoveredDevice device, Uuid serviceId) {
-    var peripheral = super.createPeripheral(device, serviceId);
-    peripheral.addNotifyListener(BleUUIDs.baseNotifyTest, nofityHandler);
+  BlePeripheral createPeripheral(DiscoveredDevice device) {
+    var peripheral = super.createPeripheral(device);
+    peripheral.addNotifyListener(
+        BleUUIDs.service1, BleUUIDs.indicateTest, indicateHandler);
+    peripheral.addNotifyListener(
+        BleUUIDs.service2, BleUUIDs.notifyTest, notifyHandler);
     return peripheral;
   }
 
-  var previousValue = -1;
-  var previousTime = -1;
-  var sumTime = 0;
-  var numNotify = 0;
-  void nofityHandler(dynamic target, Uint8List data) async {
-    var list = data.toList();
-    var firstValue = list[0];
-    if (previousValue == -1) {
-      previousValue = firstValue;
-    } else {
-      if (firstValue - previousValue != 1) {
-        bleLog("{$tag}{$logId}",
-            "---------------- fuck!!!!!!!!! $firstValue to $previousValue");
-        // try {
-        //   List<int> result = [];
-        //   result.add(firstValue);
-        //   result.add(previousValue);
-        //   peripheral
-        //       .writeCharacteristicWithResponse(
-        //           BleUUIDs.baseNotifyResultTest, Uint8List.fromList(result))
-        //       .then((value) {
-        //     bleLog("{$tag}{$logId}", "sendresult success");
-        //   }, onError: (e) {
-        //     bleLog("{$tag}{$logId}", "sendresult error");
-        //   });
-        // } catch (e) {
-        //   bleLog("{$tag}{$logId}", e.toString());
-        // }
-      }
-      // else {
-      //   List<int> result = [];
-      //   result.add(0);
-      //   result.add(0);
-      //   peripheral
-      //       .writeCharacteristicWithResponse(
-      //           BleUUIDs.baseNotifyResultTest, Uint8List.fromList(result))
-      //       .then((value) {
-      //     bleLog("{$tag}{$logId}", "sendresult success");
-      //   }, onError: (e) {
-      //     bleLog("{$tag}{$logId}", "sendresult error");
-      //   });
-      // }
-      previousValue = firstValue;
-    }
-    var timeStep = 0;
-    if (previousTime == -1) {
-      previousTime = DateTime.now().millisecondsSinceEpoch;
-    } else {
-      var time = DateTime.now().millisecondsSinceEpoch;
-      timeStep = time - previousTime;
-      previousTime = time;
-    }
-    sumTime += timeStep;
-    numNotify++;
-    var avgTime = sumTime / numNotify;
-    var avgTime2 = avgTime.floor();
-    bleLog("{$tag}{$logId}",
-        "Received notify: (length: ${data.length}) firist:${list[0]} from peripheral cast:{$timeStep}ms avg:{$avgTime2}ms");
+  void indicateHandler(BlePeripheral target, Uuid s, Uuid c, Uint8List data) {
+    bleLog(tag,
+        "Received indicate: (length: ${data.length}) ${data.toList()} from service1");
+  }
+
+  void notifyHandler(BlePeripheral target, Uuid s, Uuid c, Uint8List data) {
+    bleLog(tag,
+        "Received notify: (length: ${data.length}) ${data.toList()} from service2");
   }
 
   @override
-  Future<void> connectedHandler(dynamic target) async {
+  Future<void> connectedHandler(BlePeripheral target) async {
     super.connectedHandler(target);
-    bleLog("{$tag}{$logId}", " ---------------------------------- ");
-    bleLog("{$tag}{$logId}", "Verify current device");
+    bleLog(tag, " ---------------------------------- ");
+    bleLog(tag, "Verify current device");
     try {
-      Uint8List verifyResult =
-          await peripheral.request(BleUUIDs.verifyCentral, Constants.verifyTag);
+      Uint8List verifyResult = await peripheral.request(
+          BleUUIDs.service1, BleUUIDs.verifyCentral, Constants.verifyTag);
       if (verifyResult.isNotEmpty && verifyResult[0] == 1) {
-        bleLog("{$tag}{$logId}", "verification succeeded");
+        bleLog(tag, "verification succeeded");
       } else {
-        bleLog("{$tag}{$logId}", "verification failed");
+        bleLog(tag, "verification failed");
       }
     } catch (e) {
-      bleLog(
-          "{$tag}{$logId}", "Verifying current device error ${e.toString()}");
+      bleLog(tag, "Verifying current device error ${e.toString()}");
     }
 
-    bleLog("{$tag}{$logId}", " ---------------------------------- ");
-
-    bleLog("{$tag}{$logId}", "Initialize the suggested mtu value");
-    int suggestedMtu = await peripheral.requestSuggestedMtu();
-    bleLog("{$tag}{$logId}", "Suggested mtu value is $suggestedMtu");
-    await peripheral
-        .requestConnectionPriority(ConnectionPriority.highPerformance);
-
-    bleLog("{$tag}{$logId}", " ---------------------------------- ");
-
-    // bleLog("{$tag}{$logId}", "Reading from peripheral");
-    // try {
-    //   var data = await peripheral.readCharacteristic(BleUUIDs.baseReadTest);
-    //   bleLog("{$tag}{$logId}",
-    //       "Readed data: (length: ${data.length}) ${data.toList()} from peripheral");
-    // } catch (e) {
-    //   bleLog("{$tag}{$logId}", "Read from peripheral error: ${e.toString()}");
-    // }
-
-    // bleLog("{$tag}{$logId}", " ---------------------------------- ");
-
-    bleLog("{$tag}{$logId}", "Writing without response to peripheral");
+    bleLog(tag, " ---------------------------------- ");
+    bleLog(tag, "Reading from peripheral");
+    try {
+      var data = await peripheral.read(BleUUIDs.service1, BleUUIDs.readTest);
+      bleLog(tag,
+          "Readed data: (length: ${data.length}) ${data.toList()} from peripheral");
+    } catch (e) {
+      bleLog(tag, "Read from peripheral error: ${e.toString()}");
+    }
+    bleLog(tag, " ---------------------------------- ");
+    bleLog(tag, "Writing without response to peripheral");
     try {
       List<int> data = [];
       for (var i = 0; i < 20; i++) {
         data.add(1);
       }
-      await peripheral.writeCharacteristicWithoutResponse(
-          BleUUIDs.baseWriteTest, Uint8List.fromList(data));
-      // await peripheral.writeCharacteristicWithoutResponse(
-      // BleUUIDs.baseNotifyResultTest, Uint8List.fromList(data));
-
-      bleLog("{$tag}{$logId}",
+      await peripheral.writeWithoutResponse(
+          BleUUIDs.service1, BleUUIDs.writeTest, Uint8List.fromList(data));
+      bleLog(tag,
           "Writing without response data: (length: ${data.length}) $data to peripheral");
     } catch (e) {
-      bleLog("{$tag}{$logId}",
-          "Write without response to peripheral error: ${e.toString()}");
+      bleLog(
+          tag, "Write without response to peripheral error: ${e.toString()}");
     }
 
-    // bleLog("{$tag}{$logId}", " ---------------------------------- ");
-    // bleLog("{$tag}{$logId}", "Writing with response to peripheral");
-    // try {
-    //   List<int> data = [];
-    //   for (var i = 0; i < 20; i++) {
-    //     data.add(2);
-    //   }
-    //   await peripheral.writeCharacteristicWithResponse(
-    //       BleUUIDs.baseWriteTest, Uint8List.fromList(data));
-    //   bleLog("{$tag}{$logId}",
-    //       "Writing with response data: (length: ${data.length}) $data to peripheral");
-    // } catch (e) {
-    //   bleLog("{$tag}{$logId}", "Write with response to peripheral error: ${e.toString()}");
-    // }
+    bleLog(tag, " ---------------------------------- ");
+    bleLog(tag, "Writing with response to peripheral");
+    try {
+      List<int> data = [];
+      for (var i = 0; i < 20; i++) {
+        data.add(2);
+      }
+      await peripheral.writeWithResponse(
+          BleUUIDs.service1, BleUUIDs.writeTest, Uint8List.fromList(data));
+      bleLog(tag,
+          "Writing with response data: (length: ${data.length}) $data to peripheral");
+    } catch (e) {
+      bleLog(tag, "Write with response to peripheral error: ${e.toString()}");
+    }
   }
 }

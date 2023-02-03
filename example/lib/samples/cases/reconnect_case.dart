@@ -9,13 +9,13 @@ class ReconnectCase extends CaseBase {
   static const String tag = "ReconnectCase";
 
   @override
-  Future<void> connectedHandler(dynamic target) async {
+  Future<void> connectedHandler(BlePeripheral target) async {
     super.connectedHandler(target);
     bleLog(tag, " ---------------------------------- ");
     bleLog(tag, "Verify current device");
     try {
-      Uint8List verifyResult =
-          await peripheral.request(BleUUIDs.verifyCentral, Constants.verifyTag);
+      Uint8List verifyResult = await peripheral.request(
+          BleUUIDs.service1, BleUUIDs.verifyCentral, Constants.verifyTag);
       if (verifyResult.isNotEmpty && verifyResult[0] == 1) {
         bleLog(tag, "verification succeeded");
       } else {
@@ -31,7 +31,7 @@ class ReconnectCase extends CaseBase {
   }
 
   @override
-  void disconnectedHandler(dynamic target) {
+  void disconnectedHandler(BlePeripheral target) {
     super.disconnectedHandler(target);
     bleLog(tag, "------- Reconnect manually -------");
     peripheral.connect();

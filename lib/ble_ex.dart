@@ -5,7 +5,9 @@
 
 library ble_ex;
 
-export 'src/ble_manager.dart';
-export 'src/ble_logger.dart';
-export 'src/ble_log_level.dart';
+export 'src/ble_ex.dart';
+export 'src/utils/ble_logger.dart';
+export 'src/utils/ble_log_level.dart';
+export 'src/filters/manufacture_sample_filter.dart';
+export 'src/filters/service_sample_filter.dart';
 export 'package:flutter_reactive_ble/flutter_reactive_ble.dart';

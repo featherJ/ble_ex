@@ -9,13 +9,13 @@ class BleexRequestCase extends CaseBase {
   static const String tag = "BleexRequestCase";
 
   @override
-  Future<void> connectedHandler(dynamic target) async {
+  Future<void> connectedHandler(BlePeripheral target) async {
     super.connectedHandler(target);
     bleLog(tag, " ---------------------------------- ");
     bleLog(tag, "Verify current device");
     try {
-      Uint8List verifyResult =
-          await peripheral.request(BleUUIDs.verifyCentral, Constants.verifyTag);
+      Uint8List verifyResult = await peripheral.request(
+          BleUUIDs.service1, BleUUIDs.verifyCentral, Constants.verifyTag);
       if (verifyResult.isNotEmpty && verifyResult[0] == 1) {
         bleLog(tag, "verification succeeded");
       } else {
@@ -33,7 +33,7 @@ class BleexRequestCase extends CaseBase {
     bleLog(tag, "Requesting bytes(length: ${data.length}) from peripheral");
     try {
       var reaultData = await peripheral.request(
-          BleUUIDs.requestDataTest, Uint8List.fromList(data));
+          BleUUIDs.service1, BleUUIDs.requestTest, Uint8List.fromList(data));
       bleLog(tag,
           "Request bytes(length: ${reaultData.length}) from peripheral succeeded: ${reaultData.toList()}");
     } catch (e) {

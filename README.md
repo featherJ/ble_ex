@@ -16,7 +16,7 @@
 你可以通过命令 `flutter pub add ble_ex` 直接安装 `ble_ex` 插件，这将自动为你项目内的 `pubspec.yaml` 文件的 `dependencies` 字段中增加如下依赖
 ```yaml
 dependencies:
-  ble_ex: ^0.9.4
+  ble_ex: ^0.9.8
 ```
 #### 从 github 安装
 需要你手动在 `pubspec.yaml` 文件的 `dependencies` 字段中增加如下依赖
@@ -25,7 +25,7 @@ dependencies:
   ble_ex:
     git:
       url: https://github.com/featherJ/ble_ex.git
-      ref: ^0.9.4
+      ref: ^0.9.8
 ```
 然后执行命令
 ```
@@ -60,18 +60,18 @@ flutter pub get
 ```dart
 WidgetsFlutterBinding.ensureInitialized();
 
-BleManager.logLevel = BleLogLevel.lib;
-var bleManager = BleManager();
+BleEx.logLevel = BleLogLevel.lib;
+var bleex = BleEx();
 ```
 ### 扫描外围设备
 搜索设备提供了两种方式
 
 监听周围所有设备的变化：
 ```dart
-bleManager.listenScanAddDevice(deviceScanAddHandler);
-bleManager.listenScanUpdateDevice(deviceScanUpdateHandler);
-bleManager.listenScanRemoveDevice(deviceScanRemoveHandler);
-bleManager.scanDevices({Uint8List? manufacturerFilter});
+bleex.listenScanAddDevice(deviceScanAddHandler);
+bleex.listenScanUpdateDevice(deviceScanUpdateHandler);
+bleex.listenScanRemoveDevice(deviceScanRemoveHandler);
+bleex.scanDevices({List<DevicesFilter>? scanfilters});
 
 void deviceScanAddHandler(DiscoveredDevice device) {
     //搜索到了新的设备
@@ -87,15 +87,15 @@ void deviceScanRemoveHandler(DiscoveredDevice device) {
 
 直接搜索并获取某个指定的设备：
 ```dart
-var device = await bleManager.scanForDevice(Uuid serviceUuid,{Uint8List? manufacturerFilter})
-// device 就是扫描到的指定的外围设备
+var device = await bleex.lookForDevice(List<DevicesFilter> filters)
+// device 就是查找到的指定的外围设备
 ```
 
 ### 设备的连接与状态
 你可以通过如下方式建立或断开设备之间的连接，并监听连接状态的变化。
 
 ```dart
-BlePeripheralService peripheral = bleManager.createPeripheralService(device, serviceId);
+BlePeripheral peripheral = bleex.<T extends BlePeripheral>(DiscoveredDevice device, T instance);
 peripheral.addConnectedListener(connectedHandler);
 peripheral.addDisconnectedListener(disconnectedHandler);
 peripheral.addConnectErrorListener(connectErrorHandler);
@@ -104,15 +104,15 @@ peripheral.connect();
 // 主动断开连接
 // await peripheral.disconnect();
 
-void connectedHandler(dynamic target) {
+void connectedHandler(BlePeripheral target) {
     // 设备已连接
 }
 
-void disconnectedHandler(dynamic target) {
+void disconnectedHandler(BlePeripheral target) {
     // 设备断开
 }
 
-void connectErrorHandler(dynamic target, Object error) {
+void connectErrorHandler(BlePeripheral target, Object error) {
     // 设备连接错误
 }
 ```
@@ -121,7 +121,7 @@ void connectErrorHandler(dynamic target, Object error) {
 #### 读取特征
 ```dart
 try {
-    Uint8List response = await peripheralService.readCharacteristic(Uuid characteristicId);
+    Uint8List response = await peripheral.read(Uuid service, Uuid characteristic);
     // 有应答写完成
 } catch (e) {
     // 有应答写错误
@@ -130,7 +130,7 @@ try {
 #### 有应答写入特征
 ```dart
 try {
-    await peripheralService.writeCharacteristicWithResponse(Uuid characteristicId, Uint8List data);
+    await peripheral.writeWithResponse(Uuid service, Uuid characteristic, Uint8List data);
     // 有应答写完成
 } catch (e) {
     // 有应答写错误
@@ -139,7 +139,7 @@ try {
 #### 无应答写入特征
 ```dart
 try {
-    await peripheralService.writeCharacteristicWithoutResponse(Uuid characteristicId, Uint8List data);
+    await peripheral.writeWithoutResponse(Uuid service, Uuid characteristic, Uint8List data);
     // 无应答写完成
 } catch (e) {
     // 无应答写错误
@@ -147,15 +147,15 @@ try {
 ```
 ### 监听指定特征的通知
 ```dart
-peripheral.addNotifyListener(Uuid characteristicId, nofityHandler);
-void nofityHandler(dynamic target, Uint8List data) {
+peripheral.addNotifyListener(Uuid characteristic, nofityHandler);
+void nofityHandler(BlePeripheral target, Uuid service, Uuid characteristic,Uint8List data) {
     // 接收到了某个特征的通知
 }
 ```
 ### 短数据请求(受到mtu限制)
 ```dart
 try {
-    var response = await peripheral.request(Uuid characteristicId, Uint8List data);
+    var response = await peripheral.request(Uuid service, Uuid characteristic, Uint8List data);
     // response 为接收到的数据
 } catch (e) {
     // 请求失败
@@ -165,26 +165,32 @@ try {
 ```dart
 int suggestedMtu = await peripheral.requestSuggestedMtu();
 ```
+### 请求优先级，仅在android上生效
+应在 requestSuggestedMtu 调用结束之后再调用，因为 requestSuggestedMtu 在某些设备上可能会触发断连并自动重连的过程
+```dart
+await peripheral.requestConnectionPriority(ConnectionPriority priority);
+```
 ### 长数据的写(不受mtu限制)
 ```dart
 try {
-    await peripheral.writeBytes(BUuid characteristicId, Uint8List bytes);
+    await peripheral.writeLarge(Uuid service, Uuid characteristic, Uint8List bytes);
     // 长数据写入完成
 } catch (e) {
     // 长数据写入错误
 }
 ```
-### 监听指定特征的长数据(不受mtu限制)
+### 监听/移除监听指定特征的长数据(不受mtu限制)
 ```dart
-peripheral.addBytesListener(Uuid characteristicId, bytesHandler);
-void bytesHandler(dynamic target, Uint8List data) {
+peripheral.addLargeIndicateListener(Uuid service, Uuid characteristic, NotifyListener listener);
+peripheral.removeLargeIndicateListener(Uuid service, Uuid characteristic, NotifyListener listener);
+void largeIndicateHandler(BlePeripheral target, Uuid service, Uuid characteristic,Uint8List data) {
     // 接收到了某个特征的长数据
 }
 ```
 ### 长数据请求(不受mtu限制)
 ```dart
 try {
-    var response = await peripheral.requestBytes(Uuid characteristicId, Uint8List data);
+    var response = await peripheral.requestLarge(Uuid service, Uuid characteristic, Uint8List data);
     // response 为接收到的数据
 } catch (e) {
     // 请求失败

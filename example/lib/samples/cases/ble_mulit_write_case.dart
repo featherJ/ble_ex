@@ -5,8 +5,13 @@ import 'package:ble_ex_example/samples/ble_uuids.dart';
 import 'package:ble_ex_example/samples/cases/base_case.dart';
 import 'package:ble_ex_example/samples/constants.dart';
 
-class BleexRequestHighFrequencyCase extends CaseBase {
-  static const String tag = "BleexRequestHighFrequencyCase";
+class BleMultiWriteCase extends CaseBase {
+  static const String tag = "BleCommunicationCase";
+  @override
+  BlePeripheral createPeripheral(DiscoveredDevice device) {
+    var peripheral = super.createPeripheral(device);
+    return peripheral;
+  }
 
   @override
   Future<void> connectedHandler(BlePeripheral target) async {
@@ -36,43 +41,23 @@ class BleexRequestHighFrequencyCase extends CaseBase {
         .requestConnectionPriority(ConnectionPriority.highPerformance);
 
     bleLog(tag, " ---------------------------------- ");
-    request(1);
-    request(2);
-    request(3);
-    request(4);
-    request(5);
-    request(6);
-    request(7);
-    request(8);
-    request(9);
-    request(10);
-    request(11);
-    request(12);
-    request(13);
-    request(14);
-    request(15);
-    request(16);
-    request(17);
-    request(18);
-    request(19);
-    request(20);
-  }
 
-  request(int index) async {
-    List<int> data = [];
-    for (var i = 0; i < 500; i++) {
-      data.add(index);
-    }
-    bleLog(
-        tag, "Requesting bytes(length: ${data.length}) from peripheral $index");
-    try {
-      var reaultData = await peripheral.requestLarge(BleUUIDs.service1,
-          BleUUIDs.requestLargeTest, Uint8List.fromList(data));
-      bleLog(tag,
-          "Request bytes(length: ${reaultData.length}) from peripheral $index succeeded: ${reaultData.toList()}");
-    } catch (e) {
-      bleLog(
-          tag, "Request bytes from peripheral $index error: ${e.toString()}");
+    bleLog(tag, " ---------------------------------- ");
+    bleLog(tag, "Writing with response to peripheral");
+
+    for (var i = 0; i < 10; i++) {
+      List<int> data = [];
+      for (var j = 0; j < 20; j++) {
+        data.add(i);
+      }
+      try {
+        peripheral.writeWithResponse(
+            BleUUIDs.service1, BleUUIDs.writeTest, Uint8List.fromList(data));
+        bleLog(tag,
+            "Writing with response data: (length: ${data.length}) $data to peripheral");
+      } catch (e) {
+        bleLog(tag, "Write with response to peripheral error: ${e.toString()}");
+      }
     }
   }
 }

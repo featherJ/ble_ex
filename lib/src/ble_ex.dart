@@ -1,25 +1,24 @@
 library ble_ex;
 
-import 'dart:math';
+import 'package:ble_ex/ble_ex.dart';
+
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:io';
+import 'dart:math';
+import 'dart:typed_data';
 
-import 'package:ble_ex/src/ble_log_level.dart';
-import 'package:ble_ex/src/ble_logger.dart';
-import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
-
-part 'ble_device_core.dart';
-part 'ble_device.dart';
-
-part 'helpers/ble_device_request.dart';
-part 'helpers/ble_device_bytes_request.dart';
-part 'helpers/ble_device_notify.dart';
-part 'helpers/ble_device_write.dart';
-part 'helpers/ble_device_receive.dart';
-part 'helpers/ble_device_mtu.dart';
-
+part 'consts/data_tags.dart';
 part 'core/byte_index.dart';
+part 'device/ble_peripheral_core.dart';
+part 'device/ble_peripheral.dart';
+part 'helpers/large_writer.dart';
+part 'helpers/notify_data.dart';
+part 'helpers/requester.dart';
+part 'helpers/suggest_mtu_requester.dart';
+part 'helpers/large_indicate_recever.dart';
+part 'helpers/large_requester.dart';
+
+typedef ScanningListener = void Function(DiscoveredDevice device);
 
 class _BleStatusIniter {
   final FlutterReactiveBle _flutterReactiveBle;
@@ -51,29 +50,39 @@ class _BleStatusIniter {
   }
 }
 
-/// 封装后的Ble外围设备管理器
-class BleManager extends Object {
-  static const String _tag = "BleManager";
+/// 设备过滤器，用于搜索或查找
+typedef DevicesFilter = bool Function(DiscoveredDevice device);
 
+/// 封装后的Ble外围设备管理器
+class BleEx extends Object {
+  static const String _tag = "BleEx";
   static int logLevel = BleLogLevel.none;
 
   final FlutterReactiveBle _flutterReactiveBle = FlutterReactiveBle();
-  StreamSubscription<DiscoveredDevice>? _subscription;
 
+  _BleStatusIniter? _statusIniter;
+  StreamSubscription<DiscoveredDevice>? _subscription;
   final Map _deviceMapCache = <String, DiscoveredDevice>{};
   final Map _deviceMap = <String, DiscoveredDevice>{};
   final Map _updateDeviceMap = <String, DiscoveredDevice>{};
-  _BleStatusIniter? _statusIniter;
-  Timer? _scanTimer;
-  Uint8List? _manufacturerFilter;
 
-  void scanDevices({Uint8List? manufacturerFilter}) async {
+  List<DevicesFilter> _scanfilters = [];
+  Timer? _scanTimer;
+
+  /// 搜索设备
+  void scanDevices({List<DevicesFilter>? scanfilters}) async {
     await stopScanDevices();
-    _doScanDevices(true, manufacturerFilter: manufacturerFilter);
+    _doScanDevices(true, scanfilters);
   }
 
-  void _doScanDevices(bool fire, {Uint8List? manufacturerFilter}) async {
-    _manufacturerFilter = manufacturerFilter;
+  void _doScanDevices(bool fire, List<DevicesFilter>? scanfilters) async {
+    _scanfilters = [];
+    if (scanfilters != null) {
+      for (var i = 0; i < scanfilters.length; i++) {
+        _scanfilters.add(scanfilters[i]);
+      }
+    }
+
     _deviceMapCache.clear();
     _deviceMap.clear();
     _updateDeviceMap.clear();
@@ -111,7 +120,7 @@ class BleManager extends Object {
         if (!_deviceMap.containsKey(deviceId)) {
           _updateDeviceMap.remove(deviceId);
           if (fireScanEvent) {
-            List<void Function(DiscoveredDevice)> curScanRemoveDeviceFuncs = [];
+            List<ScanningListener> curScanRemoveDeviceFuncs = [];
             for (var listener in _scanRemoveDeviceFuncs) {
               curScanRemoveDeviceFuncs.add(listener);
             }
@@ -131,12 +140,12 @@ class BleManager extends Object {
 
   void _updateDevice(DiscoveredDevice device) {
     //如果存在通过 manufacturer 的过滤，则进行过滤
-    if (_manufacturerFilter != null) {
-      if (!_compareManufacturerData(device, _manufacturerFilter!)) {
+    for (var filter in _scanfilters) {
+      if (!filter(device)) {
         return;
       }
     }
-    _checkTargetUuidDevice(device);
+    _checkDeviceLookingFor(device);
     _deviceMap[device.id] = device;
     _doUpdateDevice(device);
   }
@@ -144,7 +153,7 @@ class BleManager extends Object {
   void _doUpdateDevice(DiscoveredDevice device) {
     if (fireScanEvent) {
       if (_updateDeviceMap.containsKey(device.id)) {
-        List<void Function(DiscoveredDevice)> curScanUpdateDeviceFuncs = [];
+        List<ScanningListener> curScanUpdateDeviceFuncs = [];
         for (var listener in _scanUpdateDeviceFuncs) {
           curScanUpdateDeviceFuncs.add(listener);
         }
@@ -152,7 +161,7 @@ class BleManager extends Object {
           listener(device);
         }
       } else {
-        List<void Function(DiscoveredDevice)> curScanAddDeviceFuncs = [];
+        List<ScanningListener> curScanAddDeviceFuncs = [];
         for (var listener in _scanAddDeviceFuncs) {
           curScanAddDeviceFuncs.add(listener);
         }
@@ -164,13 +173,13 @@ class BleManager extends Object {
     _updateDeviceMap[device.id] = device;
   }
 
+  /// 停止搜索设备
   Future<void> stopScanDevices() async {
     fireScanEvent = false;
-    _targetServiceUuid = null;
-    _targetManufacturerData = null;
-    _findTargetDeviceFunc = null;
 
-    _manufacturerFilter = null;
+    _findTargetDeviceFunc = null;
+    _lookFilters = [];
+    _scanfilters = [];
 
     _deviceMap.clear();
     _deviceMapCache.clear();
@@ -203,19 +212,17 @@ class BleManager extends Object {
   }
 
   bool fireScanEvent = true;
-  final List<void Function(DiscoveredDevice device)> _scanAddDeviceFuncs = [];
-  final List<void Function(DiscoveredDevice device)> _scanUpdateDeviceFuncs =
-      [];
-  final List<void Function(DiscoveredDevice device)> _scanRemoveDeviceFuncs =
-      [];
+  final List<ScanningListener> _scanAddDeviceFuncs = [];
+  final List<ScanningListener> _scanUpdateDeviceFuncs = [];
+  final List<ScanningListener> _scanRemoveDeviceFuncs = [];
 
   /// 扫描添加一个设备的监听
-  void listenScanAddDevice(void Function(DiscoveredDevice device) listener) {
+  void listenScanAddDevice(ScanningListener listener) {
     _scanAddDeviceFuncs.add(listener);
   }
 
   /// 移除扫描添加一个设备的监听
-  void unlistenScanAddDevice(void Function(DiscoveredDevice device) listener) {
+  void unlistenScanAddDevice(ScanningListener listener) {
     _scanAddDeviceFuncs.remove(listener);
   }
 
@@ -225,13 +232,12 @@ class BleManager extends Object {
   }
 
   /// 扫描更新一个设备的监听
-  void listenScanUpdateDevice(void Function(DiscoveredDevice device) listener) {
+  void listenScanUpdateDevice(ScanningListener listener) {
     _scanUpdateDeviceFuncs.add(listener);
   }
 
   /// 移除扫描更新一个设备的监听
-  void unlistenScanUpdateDevice(
-      void Function(DiscoveredDevice device) listener) {
+  void unlistenScanUpdateDevice(ScanningListener listener) {
     _scanUpdateDeviceFuncs.remove(listener);
   }
 
@@ -241,13 +247,12 @@ class BleManager extends Object {
   }
 
   /// 扫描删除一个设备的监听
-  void listenScanRemoveDevice(void Function(DiscoveredDevice device) listener) {
+  void listenScanRemoveDevice(ScanningListener listener) {
     _scanRemoveDeviceFuncs.add(listener);
   }
 
   /// 移除扫描删除一个设备的监听
-  void unlistenScanRemoveDevice(
-      void Function(DiscoveredDevice device) listener) {
+  void unlistenScanRemoveDevice(ScanningListener listener) {
     _scanRemoveDeviceFuncs.remove(listener);
   }
 
@@ -256,66 +261,38 @@ class BleManager extends Object {
     _scanRemoveDeviceFuncs.clear();
   }
 
-  Uuid? _targetServiceUuid;
-  Uint8List? _targetManufacturerData;
-  void Function(DiscoveredDevice device)? _findTargetDeviceFunc;
-  void _checkTargetUuidDevice(DiscoveredDevice device) {
-    if (device.serviceUuids.isNotEmpty) {
-      for (var uuid in device.serviceUuids) {
-        if (_targetServiceUuid != null && uuid == _targetServiceUuid) {
-          if (_targetManufacturerData == null) {
-            if (_findTargetDeviceFunc != null) {
-              _findTargetDeviceFunc!(device);
-            }
-          } else if (_compareManufacturerData(
-              device, _targetManufacturerData!)) {
-            if (_findTargetDeviceFunc != null) {
-              _findTargetDeviceFunc!(device);
-            }
-          }
+  ScanningListener? _findTargetDeviceFunc;
+  void _checkDeviceLookingFor(DiscoveredDevice device) {
+    if (_findTargetDeviceFunc != null && _lookFilters.isNotEmpty) {
+      for (var filter in _lookFilters) {
+        if (!filter(device)) {
+          return;
         }
       }
+      _findTargetDeviceFunc!(device);
     }
   }
 
-  bool _compareManufacturerData(
-      DiscoveredDevice device, Uint8List targetManufacturerData) {
-    Uint8List curManufacturerData = device.manufacturerData;
-    if (curManufacturerData.length - 2 >= targetManufacturerData.length) {
-      for (int i = 0; i < targetManufacturerData.length; i++) {
-        if (curManufacturerData[i + 2] != targetManufacturerData[i]) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
-  }
+  List<DevicesFilter> _lookFilters = [];
 
-  /// 得到目标蓝牙服务
-  Future<DiscoveredDevice> scanForDevice(Uuid serviceUuid,
-      {Uint8List? manufacturerFilter}) async {
+  /// 查找目标蓝牙服务
+  Future<DiscoveredDevice> lookForDevice(List<DevicesFilter> filters) async {
     await stopScanDevices();
     fireScanEvent = false;
     Completer<DiscoveredDevice> _completer = Completer();
-    _targetServiceUuid = serviceUuid;
-    _targetManufacturerData = manufacturerFilter;
+    _lookFilters = filters;
     _findTargetDeviceFunc = (device) async {
       await stopScanDevices();
       _completer.complete(device);
     };
-    _doScanDevices(false);
+    _doScanDevices(false, null);
     return _completer.future;
   }
 
-  /// 创建一个外围设备服务
-  BlePeripheralService createPeripheralService(
-      DiscoveredDevice device, Uuid serviceUuid) {
-    return BlePeripheralService._(device.id, serviceUuid, _flutterReactiveBle);
-  }
-
   /// 创建一个外围设备
-  BlePeripheral createPeripheral(DiscoveredDevice device) {
-    return BlePeripheral._(device.id, _flutterReactiveBle, null);
+  T createPeripheral<T extends BlePeripheral>(
+      DiscoveredDevice device, T instance) {
+    instance._initPeripheral(device.id, _flutterReactiveBle);
+    return instance;
   }
 }

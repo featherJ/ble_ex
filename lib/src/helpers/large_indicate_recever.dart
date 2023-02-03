@@ -4,7 +4,7 @@ part of ble_ex;
 class _BytesRecevier {
   static const String _tag = "_BytesRecevier";
 
-  //超时时间2秒
+  //超时时间20秒，仅用于避免内存溢出
   static const int timeOut = 20000;
 
   final int _requestIndex;
@@ -38,7 +38,8 @@ class _BytesRecevier {
     List<int> pack = packData.toList();
     if (_index == 0) {
       //是一个首包
-      if (pack[1] == 110 && pack[2] == 100) {
+      if (pack[1] == _DataTags.smIndicateLarge[0] &&
+          pack[2] == _DataTags.smIndicateLarge[1]) {
         bleLog(_tag, "Received first pack");
         ByteData packageSizeData = ByteData(4);
         packageSizeData.setUint8(0, pack[3]);
@@ -70,7 +71,6 @@ class _BytesRecevier {
       curIndexData.setUint8(2, pack[3]);
       curIndexData.setUint8(3, pack[4]);
       int curIndex = curIndexData.getInt32(0);
-      print("curIndex:$curIndex");
       if (curIndex == _index) {
         List<int> curPack = pack.sublist(5, pack.length);
         _packages.add(curPack);
@@ -86,7 +86,6 @@ class _BytesRecevier {
       }
     }
     _index++;
-    print('index/packageNum:$_index/$_packageNum');
     if (_packageNum == _index) {
       List<int> finalBytes = [];
       for (int i = 0; i < _packages.length; i++) {
@@ -132,12 +131,10 @@ class _BytesRecevier {
   }
 
   void _updateTimer() {
-    print("_updateTimer");
     _updateTimestamp = DateTime.now().millisecondsSinceEpoch;
   }
 
   void _cancelTimer() {
-    print("_cancelTimer");
     _timer?.cancel();
     _timer = null;
   }
@@ -157,54 +154,37 @@ class _ReceiveBytescharacteristic {
 
   final String _key;
   final BlePeripheral _blePeripheral;
-  final Uuid _serviceId;
-  final Uuid _characteristicId;
-  final dynamic _target;
-  _ReceiveBytescharacteristic(this._key, this._blePeripheral, this._serviceId,
-      this._characteristicId, this._target);
+  final Uuid _service;
+  final Uuid _characteristic;
+  final BlePeripheral _target;
+  _ReceiveBytescharacteristic(this._key, this._blePeripheral, this._service,
+      this._characteristic, this._target);
 
   String get key => _key;
 
-  final List<void Function(dynamic, Uint8List)> _listeners = [];
+  final List<NotifyListener> _listeners = [];
   bool _notifyListenerAdded = false;
 
-  void addBytesListener(
-      void Function(dynamic target, Uint8List data) listener) {
+  void addLargeIndicateListener(NotifyListener listener) {
     _listeners.add(listener);
     if (!_notifyListenerAdded) {
       _notifyListenerAdded = true;
       _blePeripheral.addNotifyListener(
-          _serviceId, _characteristicId, notifyHandler);
+          _service, _characteristic, notifyHandler);
     }
   }
 
-  Future<void> removeBytesListener(
-      void Function(dynamic target, Uint8List data) listener) async {
+  Future<void> removeLargeIndicateListener(NotifyListener listener) async {
     _listeners.remove(listener);
     if (_listeners.isEmpty) {
       _notifyListenerAdded = false;
       await _blePeripheral.removeNotifyListener(
-          _serviceId, _characteristicId, notifyHandler);
-    }
-  }
-
-  void _sendResult(int requestIndex, int result) async {
-    await _blePeripheral._ensureSafe(false);
-    try {
-      bleLog(_tag,
-          "Sending result {index:${requestIndex.toString()}, value:${result.toString()}} to peripheral.");
-      _blePeripheral.writeCharacteristicWithoutResponse(
-          _serviceId,
-          _characteristicId,
-          Uint8List.fromList([110, 110, requestIndex, result]));
-    } catch (e) {
-      bleLog(_tag,
-          "Send result {index:${requestIndex.toString()}, value:${result.toString()}} to peripheral error.");
+          _service, _characteristic, notifyHandler);
     }
   }
 
   final Map<int, _BytesRecevier> _bytesReceviers = {};
-  void notifyHandler(dynamic target, Uint8List pack) {
+  void notifyHandler(BlePeripheral target, Uuid s, Uuid c, Uint8List pack) {
     int requestIndex = -1;
     if (pack.isNotEmpty) {
       requestIndex = pack[0];
@@ -217,21 +197,20 @@ class _ReceiveBytescharacteristic {
       receiver = _bytesReceviers[requestIndex];
     } else {
       //没有这个接收器，证明原则上应该是首包才对，如果不是首包还没找到接收器，则直接忽视这个包，应该是之前包的遗漏部分。
-      if (pack.length >= 3 && pack[1] == 110 && pack[2] == 100) {
+      if (pack.length >= 3 &&
+          pack[1] == _DataTags.smIndicateLarge[0] &&
+          pack[2] == _DataTags.smIndicateLarge[1]) {
         _BytesRecevier newReceiver = _BytesRecevier(requestIndex);
         newReceiver.setCallback((requestIndex, data) {
           bleLog(_tag,
-              "Receive large bytes(length:${data.length.toString()}) complete with index:${requestIndex.toString()} from {service:${_serviceId.toString()}, characteristic:${_characteristicId.toString()}}.");
-          _sendResult(requestIndex, 0);
+              "Receive large bytes(length:${data.length.toString()}) complete with index:${requestIndex.toString()} from {service:${_service.toString()}, characteristic:${_characteristic.toString()}}.");
           _onReceiveBytes(data);
         }, (requestIndex) {
           bleLog(_tag,
-              "Receive large bytes error with index:${requestIndex.toString()} from {service:${_serviceId.toString()}, characteristic:${_characteristicId.toString()}}.");
-          _sendResult(requestIndex, 1);
+              "Receive large bytes error with index:${requestIndex.toString()} from {service:${_service.toString()}, characteristic:${_characteristic.toString()}}.");
         }, (requestIndex) {
           bleLog(_tag,
-              "Receive large bytes timeout with index:${requestIndex.toString()} from {service:${_serviceId.toString()}, characteristic:${_characteristicId.toString()}}.");
-          _sendResult(requestIndex, 2);
+              "Receive large bytes timeout with index:${requestIndex.toString()} from {service:${_service.toString()}, characteristic:${_characteristic.toString()}}.");
         }, (requestIndex) {
           _bytesReceviers.remove(requestIndex);
         });
@@ -245,12 +224,12 @@ class _ReceiveBytescharacteristic {
   }
 
   void _onReceiveBytes(Uint8List data) {
-    List<void Function(dynamic, Uint8List)> curlisteners = [];
+    List<NotifyListener> curlisteners = [];
     for (var listener in _listeners) {
       curlisteners.add(listener);
     }
     for (var listener in curlisteners) {
-      listener(_target, data);
+      listener(_target, _service, _characteristic, data);
     }
   }
 
@@ -258,39 +237,39 @@ class _ReceiveBytescharacteristic {
     _listeners.clear();
     _notifyListenerAdded = false;
     _blePeripheral.removeNotifyListener(
-        _serviceId, _characteristicId, notifyHandler);
+        _service, _characteristic, notifyHandler);
   }
 }
 
-/// 长数据接收器
-class _ReceiveBytesHelper {
+/// 长数据指示接收器
+class _LargeIndicateReceiver {
   final BlePeripheral _blePeripheral;
-  _ReceiveBytesHelper(this._blePeripheral);
+  _LargeIndicateReceiver(this._blePeripheral);
 
   Map<String, _ReceiveBytescharacteristic> receiveMap = {};
 
   /// 添加长数据监听
-  void addBytesListener(Uuid serviceId, Uuid characteristicId,
-      void Function(dynamic target, Uint8List data) listener, dynamic target) {
-    var key = serviceId.toString() + "-" + characteristicId.toString();
+  void addLargeIndicateListener(Uuid service, Uuid characteristic,
+      NotifyListener listener, BlePeripheral target) {
+    var key = service.toString() + "-" + characteristic.toString();
     _ReceiveBytescharacteristic? receiver;
     if (receiveMap.containsKey(key)) {
       receiver = receiveMap[key];
     } else {
       receiver = _ReceiveBytescharacteristic(
-          key, _blePeripheral, serviceId, characteristicId, target);
+          key, _blePeripheral, service, characteristic, target);
       receiveMap[key] = receiver;
     }
-    receiver!.addBytesListener(listener);
+    receiver!.addLargeIndicateListener(listener);
   }
 
   /// 移除长数据监听
-  Future<void> removeBytesListener(Uuid serviceId, Uuid characteristicId,
-      void Function(dynamic target, Uint8List data) listener) async {
-    var key = serviceId.toString() + "-" + characteristicId.toString();
+  Future<void> removeLargeIndicateListener(
+      Uuid service, Uuid characteristic, NotifyListener listener) async {
+    var key = service.toString() + "-" + characteristic.toString();
     if (receiveMap.containsKey(key)) {
       _ReceiveBytescharacteristic receiver = receiveMap[key]!;
-      await receiver.removeBytesListener(listener);
+      await receiver.removeLargeIndicateListener(listener);
     }
   }
 }

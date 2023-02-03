@@ -1,4 +1,4 @@
-///Log等级，用于指定 BleManager 的 logLevel
+///Log等级，用于指定 BleEx 的 logLevel
 class BleLogLevel {
   ///不输出log日志
   static const int none = 1 << 0;

@@ -1,15 +1,15 @@
 part of ble_ex;
 
 /// 封装后的Ble外围设备核心
-class BleDeviceCore {
-  static const String _tag = "BleDeviceCore";
+class _BlePeripheralCore {
+  static const String _tag = "BlePeripheralCore";
 
   //重试次数
   static const int _retryTimes = 2;
 
   final String _deviceId;
   FlutterReactiveBle? _flutterReactiveBle;
-  BleDeviceCore._(this._deviceId, this._flutterReactiveBle);
+  _BlePeripheralCore._(this._deviceId, this._flutterReactiveBle);
 
   /// 设备id
   String get deviceId => _deviceId;
@@ -108,17 +108,17 @@ class BleDeviceCore {
     });
   }
 
-  void connectToAdvertisingDevice(Uuid serviceId,
+  void connectToAdvertisingDevice(Uuid service,
       {int timeoutMilliseconds = 2000}) {
     if (connecting) {
       bleLog(_tag, '[Warning] Can not run connect again');
       return;
     }
-    _doConnectToAdvertisingDevice(serviceId, timeoutMilliseconds, 0);
+    _doConnectToAdvertisingDevice(service, timeoutMilliseconds, 0);
   }
 
   Future<void> _doConnectToAdvertisingDevice(
-      Uuid serviceId, int timeoutMilliseconds, int retryTimes) async {
+      Uuid service, int timeoutMilliseconds, int retryTimes) async {
     if (_disposed) {
       throw Exception("Can not call this after disposed");
     }
@@ -130,7 +130,7 @@ class BleDeviceCore {
     _connection = _flutterReactiveBle!
         .connectToAdvertisingDevice(
             id: deviceId,
-            withServices: [serviceId],
+            withServices: [service],
             prescanDuration: Duration(milliseconds: timeoutMilliseconds))
         .listen((update) async {
       if (!timeout) {
@@ -144,7 +144,7 @@ class BleDeviceCore {
             //重试
             bleLog(_tag, 'Retry doConnect $retryTimes');
             _doConnectToAdvertisingDevice(
-                serviceId, timeoutMilliseconds, retryTimes + 1);
+                service, timeoutMilliseconds, retryTimes + 1);
           } else {
             _connecting = false;
             _updateState(update);
@@ -177,7 +177,7 @@ class BleDeviceCore {
           //重试
           bleLog(_tag, 'Retry doConnect $retryTimes');
           _doConnectToAdvertisingDevice(
-              serviceId, timeoutMilliseconds, retryTimes + 1);
+              service, timeoutMilliseconds, retryTimes + 1);
         } else {
           _connecting = false;
           connectTimer?.cancel();
@@ -239,61 +239,61 @@ class BleDeviceCore {
 
   /// 向一个 characteristic 写入数据数据
   Future<void> writeCharacteristicWithResponse(
-      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+      Uuid service, Uuid characteristic, Uint8List data) async {
     if (disposed || disconnected) {
       throw Exception("Can not call this after disposed or disconnected");
     }
-    final characteristic = QualifiedCharacteristic(
-        serviceId: serviceId,
-        characteristicId: characteristicId,
+    final characteristicTarget = QualifiedCharacteristic(
+        serviceId: service,
+        characteristicId: characteristic,
         deviceId: deviceId);
     List<int> value = data.toList();
     await _flutterReactiveBle!
-        .writeCharacteristicWithResponse(characteristic, value: value);
+        .writeCharacteristicWithResponse(characteristicTarget, value: value);
   }
 
   /// 向一个 characteristic 写入无应答数据数据
   Future<void> writeCharacteristicWithoutResponse(
-      Uuid serviceId, Uuid characteristicId, Uint8List data) async {
+      Uuid service, Uuid characteristic, Uint8List data) async {
     if (disposed || disconnected) {
       throw Exception("Can not call this after disposed or disconnected");
     }
-    final characteristic = QualifiedCharacteristic(
-        serviceId: serviceId,
-        characteristicId: characteristicId,
+    final characteristicTarget = QualifiedCharacteristic(
+        serviceId: service,
+        characteristicId: characteristic,
         deviceId: deviceId);
     List<int> value = data.toList();
     await _flutterReactiveBle!
-        .writeCharacteristicWithoutResponse(characteristic, value: value);
+        .writeCharacteristicWithoutResponse(characteristicTarget, value: value);
   }
 
   /// 从指定的 characteristic 读取数据
   Future<Uint8List> readCharacteristic(
-      Uuid serviceId, Uuid characteristicId) async {
+      Uuid service, Uuid characteristic) async {
     if (disposed || disconnected) {
       throw Exception("Can not call this after disposed or disconnected");
     }
-    final characteristic = QualifiedCharacteristic(
-        serviceId: serviceId,
-        characteristicId: characteristicId,
+    final characteristicTarget = QualifiedCharacteristic(
+        serviceId: service,
+        characteristicId: characteristic,
         deviceId: deviceId);
     List<int> result =
-        await _flutterReactiveBle!.readCharacteristic(characteristic);
+        await _flutterReactiveBle!.readCharacteristic(characteristicTarget);
     return Uint8List.fromList(result);
   }
 
   ///监听一个指定的 characteristic
   Stream<Uint8List> subscribeToCharacteristic(
-      Uuid serviceId, Uuid characteristicId) {
+      Uuid service, Uuid characteristic) {
     if (disposed || disconnected) {
       throw Exception("Can not call this after disposed or disconnected");
     }
-    final characteristic = QualifiedCharacteristic(
-        serviceId: serviceId,
-        characteristicId: characteristicId,
+    final characteristicTarget = QualifiedCharacteristic(
+        serviceId: service,
+        characteristicId: characteristic,
         deviceId: deviceId);
     return _flutterReactiveBle!
-        .subscribeToCharacteristic(characteristic)
+        .subscribeToCharacteristic(characteristicTarget)
         .map((value) => Uint8List.fromList(value));
   }
 
@@ -383,66 +383,5 @@ class BleDeviceCore {
     await disconnect();
     await _deviceConnectionController.close();
     _flutterReactiveBle = null;
-  }
-}
-
-/// 封装后的Ble外围设备服务
-class BleDeviceService {
-  late final BleDeviceCore _device;
-  late final Uuid _serviceId;
-  BleDeviceService._(
-      String deviceId, Uuid serviceId, FlutterReactiveBle flutterReactiveBle) {
-    _device = BleDeviceCore._(deviceId, flutterReactiveBle);
-    _serviceId = serviceId;
-  }
-
-  Uuid get serviceId => _serviceId;
-  String get deviceId => _device.deviceId;
-  Stream<ConnectionStateUpdate> get state => _device.state;
-
-  void connect({int timeoutMilliseconds = 2000}) {
-    _device.connect(timeoutMilliseconds: timeoutMilliseconds);
-  }
-
-  void connectToAdvertisingDevice({int timeoutMilliseconds = 2000}) {
-    _device.connectToAdvertisingDevice(serviceId,
-        timeoutMilliseconds: timeoutMilliseconds);
-  }
-
-  Future<void> disconnect() async {
-    return _device.disconnect();
-  }
-
-  /// 向一个 characteristic 写入数据数据
-  Future<void> writeCharacteristicWithResponse(
-      Uuid characteristicId, Uint8List data) async {
-    await _device.writeCharacteristicWithResponse(
-        serviceId, characteristicId, data);
-  }
-
-  /// 向一个 characteristic 写入无应答数据数据
-  Future<void> writeCharacteristicWithoutResponse(
-      Uuid characteristicId, Uint8List data) async {
-    await _device.writeCharacteristicWithoutResponse(
-        serviceId, characteristicId, data);
-  }
-
-  /// 从指定的 characteristic 读取数据
-  Future<Uint8List> readCharacteristic(Uuid characteristicId) async {
-    return _device.readCharacteristic(serviceId, characteristicId);
-  }
-
-  ///监听一个指定的 characteristic
-  Stream<Uint8List> subscribeToCharacteristic(Uuid characteristicId) {
-    return _device.subscribeToCharacteristic(serviceId, characteristicId);
-  }
-
-  /// 请求修改mtu
-  Future<int> requestMtu(int mtu, {int timeout = 2000}) async {
-    return _device.requestMtu(mtu, timeout: timeout);
-  }
-
-  Future<void> dispose() async {
-    await _device.dispose();
   }
 }

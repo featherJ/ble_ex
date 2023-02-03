@@ -23,7 +23,7 @@ class BleUUIDs {
 
   /// A uuid of characteristic used to test writing from peripheral
   static final Uuid writeTest =
-      Uuid.parse("10000001-0002-0000-0000-000000000000");
+      Uuid.parse("10000003-0002-0000-0000-000000000000");
 
   /// A uuid of characteristic used to test indicate from peripheral device
   static final Uuid notifyTest =

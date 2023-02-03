@@ -54,8 +54,6 @@ class _SingleLargeRequester {
     }
     //验证请求号
     int curRequestIndex = response[2];
-    print(curRequestIndex);
-    print(response);
     if (curRequestIndex != _requestIndex) {
       return;
     }

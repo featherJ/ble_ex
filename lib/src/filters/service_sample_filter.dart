@@ -1,5 +1,4 @@
 import 'package:ble_ex/ble_ex.dart';
-import 'package:ble_ex/src/ble_ex.dart';
 
 class ServiceSampleFilter {
   final Uuid service;

@@ -372,7 +372,7 @@ class BlePeripheral extends Object {
     return result;
   }
 
-  List<_WriteWithResponseData> _writeWithResponseDataList = [];
+  final List<_WriteWithResponseData> _writeWithResponseDataList = [];
 
   /// 向一个 characteristic 写入数据数据
   Future<void> writeWithResponse(

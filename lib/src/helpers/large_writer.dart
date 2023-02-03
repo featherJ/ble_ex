@@ -13,7 +13,6 @@ class _LargerWriter {
     var requestIndex = _getIndex("write");
     var packageSize = _blePeripheral.packageSize;
     var datas = bytes.toList();
-    print(datas);
     int dataSize = bytes.length;
     ByteData dataSizeInt = ByteData(4);
     dataSizeInt.setInt32(0, dataSize);

@@ -6,6 +6,19 @@ typedef ConnectionListener = void Function(BlePeripheral target);
 typedef ConnectionErrorListener = void Function(
     BlePeripheral target, Object error);
 
+class _WriteWithResponseData {
+  final Uuid service;
+  final Uuid characteristic;
+  final Uint8List data;
+  late Completer<void> completer;
+  _WriteWithResponseData(
+      {required this.service,
+      required this.characteristic,
+      required this.data}) {
+    completer = Completer();
+  }
+}
+
 /// 从设备
 class BlePeripheral extends Object {
   static const String _tag = "BlePeripheral";
@@ -359,30 +372,54 @@ class BlePeripheral extends Object {
     return result;
   }
 
-  //TODO bug 在ios上，不能连续发送有应答的请求，必须等到上一个请求完成之后才可以发送，否则接收端收到的都是同样的数据，待更新ble库之后可以测试看下是否有必要去掉这个函数
-  Future<void> _canWriteWithResponse() async {
-    if (Platform.isIOS && _previousWriteFuture != null) {
-      try {
-        int time = DateTime.now().millisecondsSinceEpoch;
-        await _previousWriteFuture;
-        int time2 = DateTime.now().millisecondsSinceEpoch;
-        print(time2 - time);
-      } catch (e) {
-        //do nothing
-      }
-    }
-  }
-
-  Future<void>? _previousWriteFuture;
+  List<_WriteWithResponseData> _writeWithResponseDataList = [];
 
   /// 向一个 characteristic 写入数据数据
   Future<void> writeWithResponse(
       Uuid service, Uuid characteristic, Uint8List data) async {
-    checkConnected();
-    await _canWriteWithResponse();
-    _previousWriteFuture =
-        _device.writeCharacteristicWithResponse(service, characteristic, data);
-    return _previousWriteFuture;
+    //TODO bug 在ios上，不能连续发送有应答的请求，必须等到上一个请求完成之后才可以发送，否则接收端收到的都是同样的数据，待更新ble库之后可以测试看下是否有必要去掉这个函数
+
+    if (Platform.isIOS) {
+      var writeData = _WriteWithResponseData(
+          service: service, characteristic: characteristic, data: data);
+      _writeWithResponseDataList.add(writeData);
+      if (!writing) {
+        _doWriteWithResponse();
+      }
+      return writeData.completer.future;
+    } else if (Platform.isAndroid) {
+      checkConnected();
+      await _device.writeCharacteristicWithResponse(
+          service, characteristic, data);
+    }
+  }
+
+  bool writing = false;
+
+  /// 向一个 characteristic 写入数据数据
+  _doWriteWithResponse() async {
+    writing = true;
+    if (_writeWithResponseDataList.isNotEmpty) {
+      var itemData = _writeWithResponseDataList.removeAt(0);
+      try {
+        checkConnected();
+      } catch (e) {
+        itemData.completer.completeError(e);
+        _doWriteWithResponse();
+        return;
+      }
+      try {
+        await _device.writeCharacteristicWithResponse(
+            itemData.service, itemData.characteristic, itemData.data);
+        itemData.completer.complete();
+        _doWriteWithResponse();
+      } catch (e) {
+        itemData.completer.completeError(e);
+        _doWriteWithResponse();
+      }
+    } else {
+      writing = false;
+    }
   }
 
   /// 向一个 characteristic 写入无应答数据数据

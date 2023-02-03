@@ -1,3 +1,6 @@
+## 0.9.8
+* Restructure
+
 ## 0.9.4
 * Add: Ensure that the interval between sending data is at least 30ms.
 * Add: Add 'requestConnectionPriority' function to BlePeripheral.

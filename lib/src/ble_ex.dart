@@ -26,6 +26,7 @@ class _BleStatusIniter {
 
   bool _canceled = false;
   final _completer = Completer();
+  StreamSubscription<BleStatus>? subscription;
   Future<void> initStatus() async {
     _flutterReactiveBle.initialize().then((value) {
       if (_flutterReactiveBle.status == BleStatus.ready) {
@@ -33,8 +34,11 @@ class _BleStatusIniter {
           _completer.complete();
         }
       } else {
-        _flutterReactiveBle.statusStream.listen((status) {
+        subscription = _flutterReactiveBle.statusStream.listen((status) {
           if (status == BleStatus.ready) {
+            if (subscription != null) {
+              subscription!.cancel();
+            }
             if (!_completer.isCompleted && !_canceled) {
               _completer.complete();
             }
@@ -47,6 +51,9 @@ class _BleStatusIniter {
 
   void cancel() {
     _canceled = true;
+    if (subscription != null) {
+      subscription!.cancel();
+    }
   }
 }
 
@@ -58,8 +65,17 @@ class BleEx extends Object {
   static const String _tag = "BleEx";
   static int logLevel = BleLogLevel.none;
 
-  final FlutterReactiveBle _flutterReactiveBle = FlutterReactiveBle();
+  static final BleEx _sharedInstance = BleEx._();
+  factory BleEx() => _sharedInstance;
+  BleEx._() {
+    //do nothing
+    _flutterReactiveBle = FlutterReactiveBle();
+  }
 
+  /// 蓝牙状态
+  static Future<BleStatus> getStatus() => _sharedInstance._getStatus();
+
+  late FlutterReactiveBle _flutterReactiveBle;
   _BleStatusIniter? _statusIniter;
   StreamSubscription<DiscoveredDevice>? _subscription;
   final Map _deviceMapCache = <String, DiscoveredDevice>{};
@@ -68,6 +84,24 @@ class BleEx extends Object {
 
   List<DevicesFilter> _scanfilters = [];
   Timer? _scanTimer;
+
+  Future<BleStatus> _getStatus() async {
+    if (_flutterReactiveBle.status != BleStatus.unknown) {
+      return _flutterReactiveBle.status;
+    } else {
+      StreamSubscription<BleStatus>? subscription;
+      Completer<BleStatus> completer = Completer();
+      subscription = _flutterReactiveBle.statusStream.listen((status) {
+        if (status != BleStatus.unknown) {
+          if (subscription != null) {
+            subscription.cancel();
+          }
+          completer.complete(status);
+        }
+      });
+      return completer.future;
+    }
+  }
 
   /// 搜索设备
   void scanDevices({List<DevicesFilter>? scanfilters}) async {

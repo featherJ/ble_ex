@@ -1,3 +1,6 @@
+## 0.9.9
+* Add an function to get Bluetooth status in Bleex.
+
 ## 0.9.8
 * Restructure
 

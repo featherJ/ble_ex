@@ -1,6 +1,6 @@
 name: ble_ex
 description: A Flutter library based on flutter_reactive_ble. Added more operations for BLE communication.
-version: 0.9.8
+version: 0.9.9
 homepage: https://github.com/featherJ/ble_ex
 
 environment:
@@ -10,7 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_reactive_ble: ^5.0.2
+  flutter_reactive_ble: ^5.0.3
+
 
 dev_dependencies:
   flutter_test:

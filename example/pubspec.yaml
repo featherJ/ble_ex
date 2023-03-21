@@ -30,6 +30,17 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
 
+dependency_overrides:
+  flutter_reactive_ble:
+    git:
+      url: https://github.com/featherJ/flutter_reactive_ble.git
+      path: packages/flutter_reactive_ble
+  reactive_ble_mobile:
+    git:
+      url: https://github.com/featherJ/flutter_reactive_ble.git
+      path: packages/reactive_ble_mobile
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -15,10 +15,13 @@ class CaseBase {
       ServiceSampleFilter(BleUUIDs.service1).filter,
       ManufacturerSampleFilter(Constants.serviceManufacturerTag).filter
     ]);
-
-    bleLog(tag, 'Find device: ' + device.toString());
-    peripheral = createPeripheral(device);
-    peripheral.connect();
+    if (device != null) {
+      bleLog(tag, 'Find device: ' + device.toString());
+      peripheral = createPeripheral(device);
+      peripheral.connect();
+    } else {
+      bleLog(tag, 'Find device timeout');
+    }
   }
 
   BlePeripheral createPeripheral(DiscoveredDevice device) {

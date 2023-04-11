@@ -8,10 +8,12 @@ class BleSearchingTask {
 
   bool _disposed = false;
   bool get disposed => _disposed;
-  Completer<DiscoveredDevice> _completer = Completer();
+  Completer<DiscoveredDevice?> _completer = Completer();
+  Timer? _searchTimer;
 
   /// 搜索指定设备
-  Future<DiscoveredDevice> searchForDevice(List<DevicesFilter> filters) async {
+  Future<DiscoveredDevice?> searchForDevice(
+      List<DevicesFilter> filters, Duration timeout) async {
     if (_disposed) {
       throw Exception("Searching task can not start after disposed");
     }
@@ -21,6 +23,14 @@ class BleSearchingTask {
     }
     _completer = Completer();
     _scannerHelper!.addDeviceUpdateListener(_deviceUpdateHandler);
+    _searchTimer = Timer(timeout, () {
+      _searchTimer?.cancel();
+      _searchTimer = null;
+      if (!_completer.isCompleted) {
+        _completer.complete(null);
+        dispose();
+      }
+    });
     return _completer.future;
   }
 
@@ -37,6 +47,8 @@ class BleSearchingTask {
 
   /// 停止扫描设备
   void stopSearching() {
+    _searchTimer?.cancel();
+    _searchTimer = null;
     _scannerHelper?.removeDeviceUpdateListener(_deviceUpdateHandler);
   }
 

@@ -166,9 +166,10 @@ class BleEx extends Object {
   }
 
   /// 搜索指定设备
-  Future<DiscoveredDevice> searchForDevice(List<DevicesFilter> filters) async {
+  Future<DiscoveredDevice?> searchForDevice(List<DevicesFilter> filters,
+      {Duration timeout = const Duration(milliseconds: 5000)}) async {
     BleSearchingTask task = BleSearchingTask._(_scannerHelper);
-    return task.searchForDevice(filters);
+    return task.searchForDevice(filters, timeout);
   }
 
   /// 创建一个外围设备

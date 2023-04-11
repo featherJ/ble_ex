@@ -1,3 +1,6 @@
+## 1.0.1
+* Add timeout limit while searching for device.
+
 ## 1.0.0
 * Add multi task support for device scanning and searching.
 

@@ -31,7 +31,7 @@ void runSampleCase(BleEx bleex) {
   // CaseBase sampleCase = BleexCommunicationCase();
   // CaseBase sampleCase = BleexRequestHighFrequencyCase();
   // CaseBase sampleCase = ConnectByDistCase();
-  CaseBase sampleCase = ScanCase();
+  CaseBase sampleCase = CaseBase();
 
   sampleCase.init(bleex);
   bleLog(tag, "Sample case created");

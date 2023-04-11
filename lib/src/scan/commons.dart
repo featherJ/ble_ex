@@ -32,8 +32,12 @@ class _BleScannerHelper {
       scanMode: ScanMode.lowLatency,
     ).listen(
       (device) {
-        for (var deviceUpdateCallback in deviceUpdateCallbacks) {
-          deviceUpdateCallback(device);
+        List<ScanningListener> tempCallbacks = [];
+        for (var func in deviceUpdateCallbacks) {
+          tempCallbacks.add(func);
+        }
+        for (var callback in tempCallbacks) {
+          callback(device);
         }
       },
       onError: (error) {

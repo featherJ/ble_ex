@@ -1,3 +1,6 @@
+## 1.0.0
+* Add multi task support for device scanning and searching.
+
 ## 0.9.9
 * Add a function to get Bluetooth status in Bleex.
 

@@ -13,8 +13,9 @@ import 'package:flutter/material.dart';
 
 const String tag = "Main";
 void main() async {
-  BleEx.logLevel = BleLogLevel.lib;
   WidgetsFlutterBinding.ensureInitialized();
+
+  BleEx.logLevel = BleLogLevel.lib;
   bleLog(tag, "Running");
   var bleex = BleEx();
   runSampleCase(bleex);
@@ -23,14 +24,14 @@ void main() async {
 void runSampleCase(BleEx bleex) {
   bleLog(tag, "Creating sample case");
   // CaseBase sampleCase = VerifyCentralCase();
-  CaseBase sampleCase = BleMultiWriteCase();
+  // CaseBase sampleCase = BleMultiWriteCase();
   // CaseBase sampleCase = ReconnectCase();
   // CaseBase sampleCase = BleCommunicationCase();
   // CaseBase sampleCase = BleexRequestCase();
   // CaseBase sampleCase = BleexCommunicationCase();
   // CaseBase sampleCase = BleexRequestHighFrequencyCase();
   // CaseBase sampleCase = ConnectByDistCase();
-  // CaseBase sampleCase = ScanCase();
+  CaseBase sampleCase = ScanCase();
 
   sampleCase.init(bleex);
   bleLog(tag, "Sample case created");

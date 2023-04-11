@@ -11,7 +11,7 @@ class CaseBase {
 
   late BlePeripheral peripheral;
   Future<void> start() async {
-    var device = await bleex.lookForDevice([
+    var device = await bleex.searchForDevice([
       ServiceSampleFilter(BleUUIDs.service1).filter,
       ManufacturerSampleFilter(Constants.serviceManufacturerTag).filter
     ]);

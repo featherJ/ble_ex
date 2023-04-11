@@ -16,7 +16,7 @@
 你可以通过命令 `flutter pub add ble_ex` 直接安装 `ble_ex` 插件，这将自动为你项目内的 `pubspec.yaml` 文件的 `dependencies` 字段中增加如下依赖
 ```yaml
 dependencies:
-  ble_ex: ^0.9.9
+  ble_ex: ^1.0.0
 ```
 #### 从 github 安装
 需要你手动在 `pubspec.yaml` 文件的 `dependencies` 字段中增加如下依赖
@@ -68,26 +68,24 @@ var bleex = BleEx();
 
 监听周围所有设备的变化：
 ```dart
-bleex.listenScanAddDevice(deviceScanAddHandler);
-bleex.listenScanUpdateDevice(deviceScanUpdateHandler);
-bleex.listenScanRemoveDevice(deviceScanRemoveHandler);
-bleex.scanDevices({List<DevicesFilter>? scanfilters});
+var task = bleex.createScanningTask();
+task.addDeviceUpdateListener(deviceUpdateHandler);
+task.scanDevices({List<DevicesFilter>? filters});
 
-void deviceScanAddHandler(DiscoveredDevice device) {
-    //搜索到了新的设备
+void deviceUpdateHandler(DiscoveredDevice device) {
 }
-void deviceScanUpdateHandler(DiscoveredDevice device) {
-    //已搜索到设备更新
-}
-void deviceScanRemoveHandler(DiscoveredDevice device) {
-    //已搜索到设备移除
-}
+
+// 停止扫描设备，停止后可以重新开启
+task.stopScan();
+// 释放，释放后则不能在开启
+task.dispose();
+
 
 ```
 
 直接搜索并获取某个指定的设备：
 ```dart
-var device = await bleex.lookForDevice(List<DevicesFilter> filters)
+var device = await bleex.searchForDevice(List<DevicesFilter> filters)
 // device 就是查找到的指定的外围设备
 ```
 

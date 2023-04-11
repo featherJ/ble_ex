@@ -5,16 +5,16 @@ import 'package:ble_ex_example/samples/ble_uuids.dart';
 import 'package:ble_ex_example/samples/cases/base_case.dart';
 import 'package:ble_ex_example/samples/constants.dart';
 import 'package:ble_ex_example/samples/util.dart';
-import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 class ConnectByDistCase extends CaseBase {
   static const String tag = "ConnectByDistCase";
 
+  late BleScanningTask scanningTask;
   @override
   Future<void> start() async {
-    bleex.listenScanAddDevice(deviceScanHandler);
-    bleex.listenScanUpdateDevice(deviceScanHandler);
-    bleex.scanDevices(scanfilters: [
+    scanningTask = bleex.createScanningTask();
+    scanningTask.addDeviceUpdateListener(deviceScanHandler);
+    scanningTask.scanDevices(filters: [
       ManufacturerSampleFilter(Constants.serviceManufacturerTag).filter
     ]);
   }
@@ -33,7 +33,7 @@ class ConnectByDistCase extends CaseBase {
         bleLog(tag,
             "Found device ${device.id} rssi:${device.rssi.toString()} dist:${dist.toString()}");
         if (dist <= 0.1) {
-          bleex.stopScanDevices();
+          scanningTask.stopScan();
           peripheral = createPeripheral(device);
           peripheral.connect();
         }
